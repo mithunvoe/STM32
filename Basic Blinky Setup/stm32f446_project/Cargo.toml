@@ -1,0 +1,22 @@
+[package]
+name = "stm32f446_project"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cortex-m = "0.7.7"
+cortex-m-rt = "0.7.3"
+panic-halt = "0.2.0"
+volatile-register = "0.2.1"
+
+[profile.release]
+opt-level = 'z'     # Optimize for size
+lto = true          # Link-time optimization
+codegen-units = 1   # Better optimization
+debug = true        # Symbols are good for debugging
+panic = 'abort'     # Abort on panic
+
+[[bin]]
+name = "stm32f446_project"
+path = "src/main.rs"
+harness = false
