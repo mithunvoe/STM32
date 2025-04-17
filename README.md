@@ -32,8 +32,3 @@ Before working on these projects, make sure you have:
 - [STM32F4 Reference Manual](https://www.st.com/resource/en/reference_manual/dm00135183.pdf)
 - [Awesome Embedded Rust](https://github.com/rust-embedded/awesome-embedded-rust)
 
----
-
-## 📜 License
-
-MIT License. See `LICENSE` file for details.
