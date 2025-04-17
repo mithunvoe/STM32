@@ -20,7 +20,7 @@ This project is a minimal embedded Rust setup for the STM32F446RE microcontrolle
 Ensure you have:
 
 - Rust installed via [`rustup`](https://rustup.rs/)
-- Other dependencies like `openocd`, `gdb-multiarch`,and `llvm-tools-preview`
+- Other dependencies like `openocd`, `gdb-multiarch`
 
 ---
 
