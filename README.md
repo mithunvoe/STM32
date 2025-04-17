@@ -23,30 +23,6 @@ Before working on these projects, make sure you have:
 
 - Rust toolchain installed via [`rustup`](https://rustup.rs/)
 - Target support: `thumbv7em-none-eabihf`
-- Additional tools:
-  ```bash
-  cargo install cargo-binutils
-  rustup component add llvm-tools-preview
-  sudo apt install openocd gdb-multiarch
-  ```
-
----
-
-## 🛠️ How to Add Your Own STM32 Project
-
-1. Create a new folder with a clear name:
-   ```
-   mkdir "My New Project"
-   ```
-
-2. Put your Rust-based STM32 project inside it (you can reuse setup scripts).
-
-3. Push your changes to this repo:
-   ```bash
-   git add .
-   git commit -m "Add My New Project"
-   git push
-   ```
 
 ---
 
