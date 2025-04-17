@@ -90,3 +90,6 @@ Once the setup is complete:
 
 This project **does not use any Hardware Abstraction Layer (HAL)** – everything is done through direct memory access and raw peripheral manipulation.
 
+---
+
+
