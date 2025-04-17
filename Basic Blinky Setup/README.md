@@ -1,6 +1,6 @@
 # Basic Blinky Setup – STM32F446RE with Rust (WITHOUT HAL)
 
-This project is a minimal embedded Rust setup for the STM32F446RE microcontroller. It blinks an LED connected to pin **PA5** using direct register access – no HAL used.
+This project is a minimal embedded Rust setup for the STM32F446RE microcontroller. It blinks an LED connected to pin **PA5** using direct register access – no HAL(Hardware Abstraction Layer) used.
 
 ---
 
@@ -27,7 +27,7 @@ Ensure you have:
 ## ⚙️ Setup Instructions
 
 1. **Download the setup script**  
-   [`setup_stm32_project.sh`](https://raw.githubusercontent.com/mithunvoe/STM32/main/Basic%20Blinky%20Setup/setup_stm32_project.sh)
+   [`setup_stm32_project.sh`](https://github.com/mithunvoe/STM32/blob/main/Basic%20Blinky%20Setup/setup_stm32_project.sh)
 
 2. **Make it executable**  
    ```bash
