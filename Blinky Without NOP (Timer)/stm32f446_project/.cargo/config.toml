@@ -1,0 +1,9 @@
+[build]
+target = "thumbv7em-none-eabihf"  # Cortex-M4F target
+
+[target.thumbv7em-none-eabihf]
+runner = "gdb-multiarch -q -x openocd.gdb"
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+  "-C", "force-frame-pointers=yes",  # Helps with debugging
+]
