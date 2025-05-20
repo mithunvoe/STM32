@@ -1,29 +1,34 @@
-use crate::registers::{RCC, TIM6};
+use core::cell::RefCell;
+use cortex_m::interrupt::Mutex;
+use stm32f4::stm32f446::{self, Peripherals, TIM6};
+
+static G_TIM6: Mutex<RefCell<Option<TIM6>>> = Mutex::new(RefCell::new(None));
 
 pub fn configure_timer() {
-    unsafe {
-        // Enable Timer clock
-        RCC.as_mut().unwrap().apb1enr.value |= (1 << 4);  // TIM6EN
+    let dp = unsafe { stm32f446::Peripherals::steal() };
 
-        // Configure timer
-        
-        TIM6.as_mut().unwrap().psc.value = 90 - 1;  // 90MHz/90 = 1MHz
-        TIM6.as_mut().unwrap().arr.value = 0xFFFF;  // Max ARR value
-        
-        // Enable counter and wait for update flag
-        TIM6.as_mut().unwrap().cr1.value |= (1 << 0);  // CEN
-        while (TIM6.as_ref().unwrap().sr.value & (1 << 0)) == 0 {}  // UIF
-    }
+    dp.RCC.apb1enr.modify(|_, w| w.tim6en().set_bit());
+
+    dp.TIM6.psc.write(|w| w.psc().bits(90 - 1));
+    dp.TIM6.arr.write(|w| w.arr().bits(0xFFFF));
+
+    dp.TIM6.cr1.modify(|_, w| w.cen().set_bit());
+
+    while dp.TIM6.sr.read().uif().bit_is_clear() {}
+
+    cortex_m::interrupt::free(|cs| {
+        G_TIM6.borrow(cs).replace(Some(dp.TIM6));
+    });
 }
 
 pub fn delay_us(us: u16) {
-    unsafe {
-        // Reset counter
-        TIM6.as_mut().unwrap().cnt.value = 0;
-        
-        // Wait for counter to reach desired value
-        while TIM6.as_ref().unwrap().cnt.value < us as u32 {}
-    }
+    cortex_m::interrupt::free(|cs| {
+        if let Some(tim6) = G_TIM6.borrow(cs).borrow().as_ref() {
+            tim6.cnt.reset();
+
+            while (tim6.cnt.read().cnt().bits() as u16) < us {}
+        }
+    });
 }
 
 pub fn delay_ms(ms: u16) {
