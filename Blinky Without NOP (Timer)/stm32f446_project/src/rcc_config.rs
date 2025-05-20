@@ -1,6 +1,4 @@
-use crate::registers::RCC;
-use core::ptr::{read_volatile, write_volatile};
-use stm32f4::stm32f446::{self, Peripherals, pwr};
+use stm32f4::stm32f446::{self, Peripherals};
 
 pub fn configure_system_clock() {
     let dp: Peripherals = unsafe { stm32f446::Peripherals::steal() };
@@ -37,7 +35,7 @@ pub fn configure_system_clock() {
     });
 
     rcc.cr.modify(|_, w| w.pllon().on());
-    while (rcc.cr.read().pllrdy().is_not_ready()) {}
+    while rcc.cr.read().pllrdy().is_not_ready() {}
 
     rcc.cfgr.modify(|_, w| w.sw().pll());
 

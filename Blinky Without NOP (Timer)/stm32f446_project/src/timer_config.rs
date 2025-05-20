@@ -1,6 +1,6 @@
 use core::cell::RefCell;
 use cortex_m::interrupt::Mutex;
-use stm32f4::stm32f446::{self, Peripherals, TIM6};
+use stm32f4::stm32f446::{self, TIM6};
 
 static G_TIM6: Mutex<RefCell<Option<TIM6>>> = Mutex::new(RefCell::new(None));
 
@@ -26,7 +26,9 @@ pub fn delay_us(us: u16) {
         if let Some(tim6) = G_TIM6.borrow(cs).borrow().as_ref() {
             tim6.cnt.reset();
 
-            while (tim6.cnt.read().cnt().bits() as u16) < us {}
+            while (tim6.cnt.read().cnt().bits() as u16) < us {
+                
+            }
         }
     });
 }
