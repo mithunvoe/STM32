@@ -16,14 +16,13 @@ use timer_config::{configure_timer, delay_s};
 #[entry]
 fn main() -> ! {
     configure_system_clock();
+    configure_timer();
 
     let dp: Peripherals = unsafe { stm32f446::Peripherals::steal() };
 
     dp.RCC.ahb1enr.modify(|_, w| w.gpioaen().set_bit());
-
     dp.GPIOA.moder.modify(|_, w| w.moder5().output());
 
-    configure_timer();
 
     loop {
         dp.GPIOA.bsrr.write(|w| w.bs5().set_bit());
