@@ -17,15 +17,11 @@ use timer_config::{configure_timer, delay_s};
 static mut LAST_EXTI4_TICK: u32 = 0;
 static mut LAST_EXTI9_5_TICK: u32 = 0;
 
-const DEBOUNCE_DELAY_MS: u32 = 5000;
+const DEBOUNCE_DELAY_MS: u32 = 20000;
 
 // Static variables to store the traffic state
 static LEFT_TRAFFIC_HIGH: AtomicBool = AtomicBool::new(false);
 static RIGHT_TRAFFIC_HIGH: AtomicBool = AtomicBool::new(false);
-// Add these new static variables to control indicator blinking
-static LEFT_INDICATOR_BLINK: AtomicBool = AtomicBool::new(false);
-static RIGHT_INDICATOR_BLINK: AtomicBool = AtomicBool::new(false);
-static BLINK_STATE: AtomicBool = AtomicBool::new(false);
 
 const TESTING_FACTOR: u16 = 5;
 
@@ -42,7 +38,7 @@ const ON: bool = true;
 const OFF: bool = false;
 
 // Define constants for the indicator pins
-const LEFT_TRAFFIC_INDICATOR: u16 = 5; // PA5
+const LEFT_TRAFFIC_INDICATOR: u16 = 5;  // PA5
 const RIGHT_TRAFFIC_INDICATOR: u16 = 15; // PA6
 
 #[entry]
@@ -73,14 +69,10 @@ fn main() -> ! {
     dp.EXTI.rtsr.modify(|_, w| w.tr7().set_bit()); // Rising trigger
     dp.EXTI.imr.modify(|_, w| w.mr7().set_bit()); // Unmask interrupt
 
-    // Configure TIM3 for blinking the indicators
-    configure_blink_timer(&dp);
-
     // Enable EXTI interrupts in NVIC
     unsafe {
         NVIC::unmask(interrupt::EXTI4);
         NVIC::unmask(interrupt::EXTI9_5);
-        NVIC::unmask(interrupt::TIM3);
     }
 
     gpio_init(&dp.GPIOA, RED_LEFT, 0b01);
@@ -150,6 +142,7 @@ fn main() -> ! {
     }
 }
 
+
 #[interrupt]
 fn EXTI4() {
     unsafe {
@@ -159,16 +152,11 @@ fn EXTI4() {
             let current = LEFT_TRAFFIC_HIGH.load(Ordering::Relaxed);
             let new_state = !current;
             LEFT_TRAFFIC_HIGH.store(new_state, Ordering::Relaxed);
-
-            // Toggle blinking mode on button press
-            let is_blinking = LEFT_INDICATOR_BLINK.load(Ordering::Relaxed);
-            LEFT_INDICATOR_BLINK.store(!is_blinking, Ordering::Relaxed);
-
-            // If we're turning off blinking, ensure the LED is off
-            if is_blinking {
-                let dp = stm32f446::Peripherals::steal();
-                gpio_write_pin(&dp.GPIOA, LEFT_TRAFFIC_INDICATOR, OFF);
-            }
+            
+            // Update LED indicator immediately
+            let dp = stm32f446::Peripherals::steal();
+            let gpioa = &dp.GPIOA;
+            gpio_write_pin(gpioa, LEFT_TRAFFIC_INDICATOR, new_state);
         }
         (*EXTI::ptr()).pr.modify(|_, w| w.pr4().set_bit()); // clear interrupt
     }
@@ -183,73 +171,14 @@ fn EXTI9_5() {
             let current = RIGHT_TRAFFIC_HIGH.load(Ordering::Relaxed);
             let new_state = !current;
             RIGHT_TRAFFIC_HIGH.store(new_state, Ordering::Relaxed);
-
-            // Toggle blinking mode on button press
-            let is_blinking = RIGHT_INDICATOR_BLINK.load(Ordering::Relaxed);
-            RIGHT_INDICATOR_BLINK.store(!is_blinking, Ordering::Relaxed);
-
-            // If we're turning off blinking, ensure the LED is off
-            if is_blinking {
-                let dp = stm32f446::Peripherals::steal();
-                gpio_write_pin(&dp.GPIOA, RIGHT_TRAFFIC_INDICATOR, OFF);
-            }
+            
+            // Update LED indicator immediately
+            let dp = stm32f446::Peripherals::steal();
+            let gpioa = &dp.GPIOA;
+            gpio_write_pin(gpioa, RIGHT_TRAFFIC_INDICATOR, new_state);
         }
         (*EXTI::ptr()).pr.modify(|_, w| w.pr7().set_bit()); // clear interrupt
     }
-}
-
-// Add the timer interrupt handler for blinking
-#[interrupt]
-fn TIM3() {
-    unsafe {
-        let dp = stm32f446::Peripherals::steal();
-        let gpioa = &dp.GPIOA;
-
-        // Toggle blink state
-        let current_blink_state = BLINK_STATE.load(Ordering::Relaxed);
-        let new_blink_state = !current_blink_state;
-        BLINK_STATE.store(new_blink_state, Ordering::Relaxed);
-
-        // Update left indicator if in blink mode
-        if LEFT_INDICATOR_BLINK.load(Ordering::Relaxed) {
-            gpio_write_pin(
-                gpioa,
-                LEFT_TRAFFIC_INDICATOR,
-                if new_blink_state { ON } else { OFF },
-            );
-        }
-
-        // Update right indicator if in blink mode
-        if RIGHT_INDICATOR_BLINK.load(Ordering::Relaxed) {
-            gpio_write_pin(
-                gpioa,
-                RIGHT_TRAFFIC_INDICATOR,
-                if new_blink_state { ON } else { OFF },
-            );
-        }
-
-        // Clear interrupt flag
-        dp.TIM3.sr.modify(|_, w| w.uif().clear_bit());
-    }
-}
-
-fn configure_blink_timer(dp: &Peripherals) {
-    // Enable TIM3 clock
-    dp.RCC.apb1enr.modify(|_, w| w.tim3en().set_bit());
-
-    // Set prescaler to get 1kHz timer clock (assuming 16MHz system clock)
-    // 16000000 / 16000 = 1000 Hz
-    dp.TIM3.psc.write(|w| w.psc().bits(15999));
-
-    // Set auto-reload register for 500ms (0.5s) blink interval
-    // 500ms * 1kHz = 500 counts
-    dp.TIM3.arr.write(|w| w.arr().bits(500));
-
-    // Enable update interrupt
-    dp.TIM3.dier.write(|w| w.uie().set_bit());
-
-    // Enable timer
-    dp.TIM3.cr1.modify(|_, w| w.cen().set_bit());
 }
 
 pub fn gpio_write_pin(gpio: &stm32f4::stm32f446::GPIOA, pin: u16, state: bool) {
