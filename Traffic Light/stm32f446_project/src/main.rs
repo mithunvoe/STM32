@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use cortex_m_rt::entry;
 use panic_halt as _;
 
@@ -17,15 +17,23 @@ use timer_config::{configure_timer, delay_s};
 static mut LAST_EXTI4_TICK: u32 = 0;
 static mut LAST_EXTI9_5_TICK: u32 = 0;
 
-const DEBOUNCE_DELAY_MS: u32 = 5000;
+const DEBOUNCE_DELAY_MS: u32 = 500;
 
-// Static variables to store the traffic state
-static LEFT_TRAFFIC_HIGH: AtomicBool = AtomicBool::new(false);
-static RIGHT_TRAFFIC_HIGH: AtomicBool = AtomicBool::new(false);
-// Add these new static variables to control indicator blinking
-static LEFT_INDICATOR_BLINK: AtomicBool = AtomicBool::new(false);
-static RIGHT_INDICATOR_BLINK: AtomicBool = AtomicBool::new(false);
-static BLINK_STATE: AtomicBool = AtomicBool::new(false);
+static LEFT_TRAFFIC_INTENSITY_LEVEL: AtomicU8 = AtomicU8::new(0);
+static RIGHT_TRAFFIC_INTENSITY_LEVEL: AtomicU8 = AtomicU8::new(0);
+
+static LEFT_INDICATOR_RATE: AtomicU8 = AtomicU8::new(0);
+static RIGHT_INDICATOR_RATE: AtomicU8 = AtomicU8::new(0);
+
+static LEFT_BLINK_STATE: AtomicBool = AtomicBool::new(false);
+static RIGHT_BLINK_STATE: AtomicBool = AtomicBool::new(false);
+static LEFT_BLINK_COUNTER: AtomicU8 = AtomicU8::new(0);
+static RIGHT_BLINK_COUNTER: AtomicU8 = AtomicU8::new(0);
+
+const BLINK_OFF: u8 = 0;
+const BLINK_SLOW: u8 = 1;
+const BLINK_MEDIUM: u8 = 2;
+const BLINK_FAST: u8 = 3;
 
 const TESTING_FACTOR: u16 = 5;
 
@@ -41,9 +49,12 @@ const RIGHT_TRAFFIC_INSTENSITY: u16 = 7;
 const ON: bool = true;
 const OFF: bool = false;
 
-// Define constants for the indicator pins
-const LEFT_TRAFFIC_INDICATOR: u16 = 5; // PA5
-const RIGHT_TRAFFIC_INDICATOR: u16 = 15; // PA6
+const LEFT_TRAFFIC_INDICATOR: u16 = 5;
+const RIGHT_TRAFFIC_INDICATOR: u16 = 15;
+
+const NORMAL: u8 = 0;
+const INTENSE: u8 = 1;
+const HIGH_INTENSE: u8 = 2;
 
 #[entry]
 fn main() -> ! {
@@ -57,26 +68,22 @@ fn main() -> ! {
     let dp: Peripherals = unsafe { stm32f446::Peripherals::steal() };
 
     dp.RCC.ahb1enr.modify(|_, w| w.gpioaen().set_bit());
-    dp.RCC.apb2enr.modify(|_, w| w.syscfgen().set_bit()); // Enable SYSCFG clock for EXTI
+    dp.RCC.apb2enr.modify(|_, w| w.syscfgen().set_bit());
 
-    // Configure EXTI line for pin 4 (LEFT_TRAFFIC_INTENSITY)
     dp.SYSCFG
         .exticr2
-        .modify(|_, w| unsafe { w.exti4().bits(0b0000) }); // PA4 source
-    dp.EXTI.rtsr.modify(|_, w| w.tr4().set_bit()); // Rising trigger
-    dp.EXTI.imr.modify(|_, w| w.mr4().set_bit()); // Unmask interrupt
+        .modify(|_, w| unsafe { w.exti4().bits(0b0000) });
+    dp.EXTI.rtsr.modify(|_, w| w.tr4().set_bit());
+    dp.EXTI.imr.modify(|_, w| w.mr4().set_bit());
 
-    // Configure EXTI line for pin 7 (RIGHT_TRAFFIC_INSTENSITY)
     dp.SYSCFG
         .exticr2
-        .modify(|_, w| unsafe { w.exti7().bits(0b0000) }); // PA7 source
-    dp.EXTI.rtsr.modify(|_, w| w.tr7().set_bit()); // Rising trigger
-    dp.EXTI.imr.modify(|_, w| w.mr7().set_bit()); // Unmask interrupt
+        .modify(|_, w| unsafe { w.exti7().bits(0b0000) });
+    dp.EXTI.rtsr.modify(|_, w| w.tr7().set_bit());
+    dp.EXTI.imr.modify(|_, w| w.mr7().set_bit());
 
-    // Configure TIM3 for blinking the indicators
     configure_blink_timer(&dp);
 
-    // Enable EXTI interrupts in NVIC
     unsafe {
         NVIC::unmask(interrupt::EXTI4);
         NVIC::unmask(interrupt::EXTI9_5);
@@ -100,20 +107,36 @@ fn main() -> ! {
 
     let delay_normal: [u16; 4] = [15, 5, 15, 5];
     let delay_left_intense: [u16; 4] = [10, 5, 30, 5];
+    let delay_left_high_intense: [u16; 4] = [10, 5, 50, 5];
     let delay_right_intense: [u16; 4] = [30, 5, 10, 5];
-    // gpio_write_pin(&dp.GPIOA, 5, ON);
+    let delay_right_high_intense: [u16; 4] = [50, 5, 10, 5];
+
     loop {
-        let left_traffic_high = LEFT_TRAFFIC_HIGH.load(Ordering::Relaxed);
-        let right_traffic_high = RIGHT_TRAFFIC_HIGH.load(Ordering::Relaxed);
+        let left_intensity = LEFT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
+        let right_intensity = RIGHT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
 
-        let mut delay: [u16; 4] = [1, 1, 1, 1];
+        let mut delay: [u16; 4] = delay_normal;
 
-        if left_traffic_high == right_traffic_high {
-            delay = delay_normal;
-        } else if left_traffic_high {
-            delay = delay_left_intense;
-        } else if right_traffic_high {
-            delay = delay_right_intense;
+        if left_intensity == right_intensity {
+            delay = delay_normal
+        } else if left_intensity == NORMAL {
+            if right_intensity == INTENSE {
+                delay = delay_right_intense;
+            } else if right_intensity == HIGH_INTENSE {
+                delay = delay_right_high_intense;
+            }
+        } else if left_intensity == INTENSE {
+            if right_intensity == NORMAL {
+                delay = delay_left_intense;
+            } else if right_intensity == HIGH_INTENSE {
+                delay = delay_right_intense;
+            }
+        } else if left_intensity == HIGH_INTENSE {
+            if right_intensity == NORMAL {
+                delay = delay_left_high_intense;
+            } else if right_intensity == INTENSE {
+                delay = delay_left_intense;
+            }
         }
 
         gpio_write_pin(&dp.GPIOA, RED_LEFT, ON);
@@ -126,14 +149,29 @@ fn main() -> ! {
 
         delay_s(delay[1] / TESTING_FACTOR);
 
-        let left_traffic_high = LEFT_TRAFFIC_HIGH.load(Ordering::Relaxed);
-        let right_traffic_high = RIGHT_TRAFFIC_HIGH.load(Ordering::Relaxed);
-        if left_traffic_high == right_traffic_high {
-            delay = delay_normal;
-        } else if left_traffic_high {
-            delay = delay_left_intense;
-        } else if right_traffic_high {
-            delay = delay_right_intense;
+        let left_intensity = LEFT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
+        let right_intensity = RIGHT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
+
+        if left_intensity == right_intensity {
+            delay = delay_normal
+        } else if left_intensity == NORMAL {
+            if right_intensity == INTENSE {
+                delay = delay_right_intense;
+            } else if right_intensity == HIGH_INTENSE {
+                delay = delay_right_high_intense;
+            }
+        } else if left_intensity == INTENSE {
+            if right_intensity == NORMAL {
+                delay = delay_left_intense;
+            } else if right_intensity == HIGH_INTENSE {
+                delay = delay_right_intense;
+            }
+        } else if left_intensity == HIGH_INTENSE {
+            if right_intensity == NORMAL {
+                delay = delay_left_high_intense;
+            } else if right_intensity == INTENSE {
+                delay = delay_left_intense;
+            }
         }
 
         gpio_write_pin(&dp.GPIOA, RED_LEFT, OFF);
@@ -156,21 +194,24 @@ fn EXTI4() {
         let now = DWT::cycle_count();
         if now.wrapping_sub(LAST_EXTI4_TICK) > 16_000_000 / 1000 * DEBOUNCE_DELAY_MS {
             LAST_EXTI4_TICK = now;
-            let current = LEFT_TRAFFIC_HIGH.load(Ordering::Relaxed);
-            let new_state = !current;
-            LEFT_TRAFFIC_HIGH.store(new_state, Ordering::Relaxed);
 
-            // Toggle blinking mode on button press
-            let is_blinking = LEFT_INDICATOR_BLINK.load(Ordering::Relaxed);
-            LEFT_INDICATOR_BLINK.store(!is_blinking, Ordering::Relaxed);
+            let current_level = LEFT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
+            let new_level = (current_level + 1) % 3;
+            LEFT_TRAFFIC_INTENSITY_LEVEL.store(new_level, Ordering::Relaxed);
 
-            // If we're turning off blinking, ensure the LED is off
-            if is_blinking {
+            match new_level {
+                NORMAL => LEFT_INDICATOR_RATE.store(BLINK_OFF, Ordering::Relaxed),
+                INTENSE => LEFT_INDICATOR_RATE.store(BLINK_MEDIUM, Ordering::Relaxed),
+                HIGH_INTENSE => LEFT_INDICATOR_RATE.store(BLINK_FAST, Ordering::Relaxed),
+                _ => LEFT_INDICATOR_RATE.store(BLINK_OFF, Ordering::Relaxed),
+            }
+
+            if new_level == NORMAL {
                 let dp = stm32f446::Peripherals::steal();
                 gpio_write_pin(&dp.GPIOA, LEFT_TRAFFIC_INDICATOR, OFF);
             }
         }
-        (*EXTI::ptr()).pr.modify(|_, w| w.pr4().set_bit()); // clear interrupt
+        (*EXTI::ptr()).pr.modify(|_, w| w.pr4().set_bit());
     }
 }
 
@@ -180,75 +221,123 @@ fn EXTI9_5() {
         let now = DWT::cycle_count();
         if now.wrapping_sub(LAST_EXTI9_5_TICK) > 16_000_000 / 1000 * DEBOUNCE_DELAY_MS {
             LAST_EXTI9_5_TICK = now;
-            let current = RIGHT_TRAFFIC_HIGH.load(Ordering::Relaxed);
-            let new_state = !current;
-            RIGHT_TRAFFIC_HIGH.store(new_state, Ordering::Relaxed);
 
-            // Toggle blinking mode on button press
-            let is_blinking = RIGHT_INDICATOR_BLINK.load(Ordering::Relaxed);
-            RIGHT_INDICATOR_BLINK.store(!is_blinking, Ordering::Relaxed);
+            let current_level = RIGHT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
+            let new_level = (current_level + 1) % 3;
+            RIGHT_TRAFFIC_INTENSITY_LEVEL.store(new_level, Ordering::Relaxed);
 
-            // If we're turning off blinking, ensure the LED is off
-            if is_blinking {
+            match new_level {
+                NORMAL => RIGHT_INDICATOR_RATE.store(BLINK_OFF, Ordering::Relaxed),
+                INTENSE => RIGHT_INDICATOR_RATE.store(BLINK_MEDIUM, Ordering::Relaxed),
+                HIGH_INTENSE => RIGHT_INDICATOR_RATE.store(BLINK_FAST, Ordering::Relaxed),
+                _ => RIGHT_INDICATOR_RATE.store(BLINK_OFF, Ordering::Relaxed),
+            }
+
+            if new_level == NORMAL {
                 let dp = stm32f446::Peripherals::steal();
                 gpio_write_pin(&dp.GPIOA, RIGHT_TRAFFIC_INDICATOR, OFF);
             }
         }
-        (*EXTI::ptr()).pr.modify(|_, w| w.pr7().set_bit()); // clear interrupt
+        (*EXTI::ptr()).pr.modify(|_, w| w.pr7().set_bit());
     }
 }
 
-// Add the timer interrupt handler for blinking
 #[interrupt]
 fn TIM3() {
     unsafe {
         let dp = stm32f446::Peripherals::steal();
         let gpioa = &dp.GPIOA;
 
-        // Toggle blink state
-        let current_blink_state = BLINK_STATE.load(Ordering::Relaxed);
-        let new_blink_state = !current_blink_state;
-        BLINK_STATE.store(new_blink_state, Ordering::Relaxed);
+        let left_rate = LEFT_INDICATOR_RATE.load(Ordering::Relaxed);
+        let right_rate = RIGHT_INDICATOR_RATE.load(Ordering::Relaxed);
 
-        // Update left indicator if in blink mode
-        if LEFT_INDICATOR_BLINK.load(Ordering::Relaxed) {
-            gpio_write_pin(
-                gpioa,
-                LEFT_TRAFFIC_INDICATOR,
-                if new_blink_state { ON } else { OFF },
-            );
+        if left_rate > BLINK_OFF {
+            let left_counter = LEFT_BLINK_COUNTER.load(Ordering::Relaxed);
+            let mut update_left = false;
+
+            match left_rate {
+                BLINK_FAST => {
+                    if left_counter % 3 == 0 {
+                        update_left = true;
+                    }
+                }
+                BLINK_MEDIUM => {
+                    if left_counter % 8 == 0 {
+                        update_left = true;
+                    }
+                }
+                BLINK_SLOW => {
+                    if left_counter % 6 == 0 {
+                        update_left = true;
+                    }
+                }
+                _ => {}
+            }
+
+            if update_left {
+                let current_left_state = LEFT_BLINK_STATE.load(Ordering::Relaxed);
+                let new_left_state = !current_left_state;
+                LEFT_BLINK_STATE.store(new_left_state, Ordering::Relaxed);
+                gpio_write_pin(
+                    gpioa,
+                    LEFT_TRAFFIC_INDICATOR,
+                    if new_left_state { ON } else { OFF },
+                );
+            }
+
+            LEFT_BLINK_COUNTER.store((left_counter + 1) % 12, Ordering::Relaxed);
         }
 
-        // Update right indicator if in blink mode
-        if RIGHT_INDICATOR_BLINK.load(Ordering::Relaxed) {
-            gpio_write_pin(
-                gpioa,
-                RIGHT_TRAFFIC_INDICATOR,
-                if new_blink_state { ON } else { OFF },
-            );
+        if right_rate > BLINK_OFF {
+            let right_counter = RIGHT_BLINK_COUNTER.load(Ordering::Relaxed);
+            let mut update_right = false;
+
+            match right_rate {
+                BLINK_FAST => {
+                    if right_counter % 3 == 0 {
+                        update_right = true;
+                    }
+                }
+                BLINK_MEDIUM => {
+                    if right_counter % 8 == 0 {
+                        update_right = true;
+                    }
+                }
+                BLINK_SLOW => {
+                    if right_counter % 6 == 0 {
+                        update_right = true;
+                    }
+                }
+                _ => {}
+            }
+
+            if update_right {
+                let current_right_state = RIGHT_BLINK_STATE.load(Ordering::Relaxed);
+                let new_right_state = !current_right_state;
+                RIGHT_BLINK_STATE.store(new_right_state, Ordering::Relaxed);
+                gpio_write_pin(
+                    gpioa,
+                    RIGHT_TRAFFIC_INDICATOR,
+                    if new_right_state { ON } else { OFF },
+                );
+            }
+
+            RIGHT_BLINK_COUNTER.store((right_counter + 1) % 12, Ordering::Relaxed);
         }
 
-        // Clear interrupt flag
         dp.TIM3.sr.modify(|_, w| w.uif().clear_bit());
     }
 }
 
 fn configure_blink_timer(dp: &Peripherals) {
-    // Enable TIM3 clock
     dp.RCC.apb1enr.modify(|_, w| w.tim3en().set_bit());
 
-    // Set prescaler to get 1kHz timer clock (assuming 16MHz system clock)
-    // 16000000 / 16000 = 1000 Hz
     dp.TIM3.psc.write(|w| w.psc().bits(15999));
 
-    // Set auto-reload register for 500ms (0.5s) blink interval
-    // 500ms * 1kHz = 500 counts
-    dp.TIM3.arr.write(|w| w.arr().bits(500));
+    dp.TIM3.arr.write(|w| w.arr().bits(100));
 
-    // Enable update interrupt
     dp.TIM3.dier.write(|w| w.uie().set_bit());
 
-    // Enable timer
     dp.TIM3.cr1.modify(|_, w| w.cen().set_bit());
 }
 
@@ -266,8 +355,8 @@ pub fn gpio_write_pin(gpio: &stm32f4::stm32f446::GPIOA, pin: u16, state: bool) {
 pub fn gpio_init(gpio: &stm32f4::stm32f446::GPIOA, pin: u16, mode: u8) {
     gpio.moder.modify(|r, w| unsafe {
         let mut bits = r.bits();
-        bits &= !(0b11 << (pin * 2)); // Clear the 2 bits for the pin
-        bits |= (mode as u32) << (pin * 2); // Set the new mode
+        bits &= !(0b11 << (pin * 2));
+        bits |= (mode as u32) << (pin * 2);
         w.bits(bits)
     });
 }
