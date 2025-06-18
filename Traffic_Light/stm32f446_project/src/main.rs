@@ -5,11 +5,11 @@ use core::sync::atomic::Ordering;
 use cortex_m_rt::entry;
 use panic_halt as _;
 
-mod rcc_config;
-mod timer_config;
 mod constants;
 mod gpio_helpers;
 mod interreupt_helpers;
+mod rcc_config;
+mod timer_config;
 mod traffic;
 
 use cortex_m::peripheral::Peripherals as CorePeripherals;
@@ -63,7 +63,7 @@ fn main() -> ! {
     gpio_init(&dp.GPIOA, RED_RIGHT, 0b01);
     gpio_init(&dp.GPIOA, LEFT_TRAFFIC_INTENSITY, 0b00);
     gpio_init(&dp.GPIOA, RIGHT_TRAFFIC_INSTENSITY, 0b00);
-    gpio_init(&dp.GPIOA, 5, 0b01);
+    // gpio_init(&dp.GPIOA, 5, 0b01);
     gpio_init(&dp.GPIOA, LEFT_TRAFFIC_INDICATOR, 0b01);
     gpio_init(&dp.GPIOA, RIGHT_TRAFFIC_INDICATOR, 0b01);
 
@@ -75,12 +75,12 @@ fn main() -> ! {
         let right_intensity = RIGHT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
 
         let mut delay = get_traffic_delays(left_intensity, right_intensity);
-
+        //right green, left red
         gpio_write_pin(&dp.GPIOA, RED_LEFT, ON);
         gpio_write_pin(&dp.GPIOA, GREEN_RIGHT, ON);
 
         delay_s(delay[0] / TESTING_FACTOR);
-
+        // yellow
         gpio_write_pin(&dp.GPIOA, GREEN_RIGHT, OFF);
         gpio_write_pin(&dp.GPIOA, YELLOW_RIGHT, ON);
 
@@ -90,13 +90,15 @@ fn main() -> ! {
         let right_intensity = RIGHT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
 
         delay = get_traffic_delays(left_intensity, right_intensity);
-
+        
+        //left green, right red
         gpio_write_pin(&dp.GPIOA, RED_LEFT, OFF);
         gpio_write_pin(&dp.GPIOA, YELLOW_RIGHT, OFF);
         gpio_write_pin(&dp.GPIOA, GREEN_LEFT, ON);
         gpio_write_pin(&dp.GPIOA, RED_RIGHT, ON);
         delay_s(delay[2] / TESTING_FACTOR);
 
+        //yellow
         gpio_write_pin(&dp.GPIOA, GREEN_LEFT, OFF);
         gpio_write_pin(&dp.GPIOA, YELLOW_LEFT, ON);
         delay_s(delay[3] / TESTING_FACTOR);

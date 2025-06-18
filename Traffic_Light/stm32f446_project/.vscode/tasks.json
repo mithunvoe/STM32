@@ -1,0 +1,49 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558 
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Cargo build",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--target",
+                "thumbv7em-none-eabihf"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Build binary",
+            "type": "shell",
+            "command": "arm-none-eabi-objcopy",
+            "args": [
+                "--output-target", "binary",
+                "${workspaceFolder}\\target\\thumbv7em-none-eabihf\\debug\\stm32f446_project",
+                "${workspaceFolder}\\target\\thumbv7em-none-eabihf\\debug\\stm32f446_project.bin"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": "Cargo build"
+        },
+        {
+            "label": "Flash with OpenOCD",
+            "type": "shell",
+            "command": "openocd",
+            "args": [
+                "-f", "interface/stlink.cfg",
+                "-f", "target/stm32f4x.cfg",
+                "-c", "program ${workspaceFolder}\\target\\thumbv7em-none-eabihf\\debug\\stm32f446_project.bin verify reset exit"
+            ],
+            "problemMatcher": [],
+            "group": "none"
+        }
+    ]
+}
