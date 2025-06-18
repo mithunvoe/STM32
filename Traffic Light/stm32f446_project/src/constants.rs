@@ -4,6 +4,7 @@ pub const YELLOW_LEFT: u16 = 8;
 pub const GREEN_LEFT: u16 = 10;
 pub const GREEN_RIGHT: u16 = 6;
 pub const YELLOW_RIGHT: u16 = 11;
+pub const RED_RIGHT: u16 = 12;
 pub const LEFT_TRAFFIC_INTENSITY: u16 = 4;
 pub const RIGHT_TRAFFIC_INSTENSITY: u16 = 7;
 pub const LEFT_TRAFFIC_INDICATOR: u16 = 5;
