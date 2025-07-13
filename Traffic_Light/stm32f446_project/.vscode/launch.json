@@ -1,6 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [
+        
         {
             // "gdbPath": "gdb",
             "objdumpPath": "arm-none-eabi-objdump",
@@ -9,7 +10,7 @@
             "request": "launch",
             "servertype": "openocd",
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceRoot}/target/thumbv7em-none-eabihf/debug/${input:executablePath}",
+            "executable": "${workspaceRoot}/target/thumbv7em-none-eabihf/debug/stm32f446_project",
             "name": "Debug (OpenOCD)",
             "device": "STM32F446",
             "configFiles": [
@@ -23,13 +24,6 @@
                 "samplesPerSecond": 4
             },
             "svdFile": "${workspaceRoot}/stm32f446.svd"
-        }
-    ],
-    "inputs": [
-        {
-            "id": "executablePath",
-            "type": "promptString",
-            "description": "Enter the path to the executable"
         }
     ]
 }

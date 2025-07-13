@@ -8,9 +8,22 @@ use crate::traffic::{
     LEFT_BLINK_COUNTER, LEFT_BLINK_STATE, LEFT_INDICATOR_RATE, LEFT_TRAFFIC_INTENSITY_LEVEL,
     RIGHT_BLINK_COUNTER, RIGHT_BLINK_STATE, RIGHT_INDICATOR_RATE, RIGHT_TRAFFIC_INTENSITY_LEVEL,
 };
+use crate::uart::{uart_add_to_buffer};
 
 static mut LAST_EXTI4_TICK: u32 = 0;
 static mut LAST_EXTI9_5_TICK: u32 = 0;
+
+#[interrupt]
+fn USART2() {
+    let dp = unsafe { stm32f446::Peripherals::steal() };
+    
+    // Check if RX interrupt flag is set
+    if dp.USART2.sr.read().rxne().bit_is_set() {
+        let received_byte = dp.USART2.dr.read().bits() as u8;
+        uart_add_to_buffer(received_byte);
+    }
+}
+
 
 #[interrupt]
 fn EXTI4() {

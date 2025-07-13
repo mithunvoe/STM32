@@ -9,6 +9,7 @@ cortex-m-rt = "0.7.3"
 panic-halt = "0.2.0" 
 volatile-register = "0.2.1"
 stm32f4 = { version = "0.15.1", features = ["stm32f446"] }
+heapless = "0.8.0"
 
 
 [profile.release]
