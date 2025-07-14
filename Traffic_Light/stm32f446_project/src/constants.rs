@@ -28,3 +28,4 @@ pub const BLINK_FAST: u8 = 3;
 // Timing constants
 pub const TESTING_FACTOR: u16 = 5;
 pub const DEBOUNCE_DELAY_MS: u32 = 500;
+

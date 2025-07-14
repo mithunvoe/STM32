@@ -11,7 +11,14 @@ pub static RIGHT_BLINK_STATE: AtomicBool = AtomicBool::new(false);
 pub static LEFT_BLINK_COUNTER: AtomicU8 = AtomicU8::new(0);
 pub static RIGHT_BLINK_COUNTER: AtomicU8 = AtomicU8::new(0);
 
+// Add status reporting variables
+pub static CURRENT_TRAFFIC_STATE: AtomicU8 = AtomicU8::new(0);
 
+// Traffic states
+pub const STATE_RIGHT_GREEN_LEFT_RED: u8 = 0;
+pub const STATE_RIGHT_YELLOW_LEFT_RED: u8 = 1;
+pub const STATE_LEFT_GREEN_RIGHT_RED: u8 = 2;
+pub const STATE_LEFT_YELLOW_RIGHT_RED: u8 = 3;
 
 use crate::constants::*;
 
@@ -52,3 +59,4 @@ pub fn get_traffic_delays(left_intensity: u8, right_intensity: u8) -> [u16; 4] {
         delay_normal
     }
 }
+

@@ -21,9 +21,9 @@ use timer_config::{configure_timer, delay_s};
 use constants::*;
 use gpio_helpers::{gpio_init, gpio_write_pin};
 use interreupt_helpers::configure_blink_timer;
-use traffic::{LEFT_TRAFFIC_INTENSITY_LEVEL, RIGHT_TRAFFIC_INTENSITY_LEVEL, get_traffic_delays};
+use traffic::{LEFT_TRAFFIC_INTENSITY_LEVEL, RIGHT_TRAFFIC_INTENSITY_LEVEL, get_traffic_delays, CURRENT_TRAFFIC_STATE, STATE_RIGHT_GREEN_LEFT_RED, STATE_RIGHT_YELLOW_LEFT_RED, STATE_LEFT_GREEN_RIGHT_RED, STATE_LEFT_YELLOW_RIGHT_RED};
 
-use crate::uart::{uart_get_string, uart_init, uart_line_available, uart_send_string};
+use crate::uart::uart_init;
 
 #[entry]
 fn main() -> ! {
@@ -77,48 +77,21 @@ fn main() -> ! {
     dp.GPIOA.pupdr.modify(|_, w| w.pupdr7().pull_down());
 
     loop {
-        uart_send_string(&dp, "Hello world!\r\nFeels great to be able to talk\n");
-        if uart_line_available() {
-        if let Some(command) = uart_get_string() {
-            match command.as_str() {
-                "0" => {
-                    LEFT_TRAFFIC_INTENSITY_LEVEL.store(0, Ordering::Relaxed);
-                    RIGHT_TRAFFIC_INTENSITY_LEVEL.store(0, Ordering::Relaxed);
-                    uart_send_string(&dp, "Traffic intensity set to 0\r\n");
-                }
-                "1" => {
-                    LEFT_TRAFFIC_INTENSITY_LEVEL.store(1, Ordering::Relaxed);
-                    uart_send_string(&dp, "Left traffic intensity set to 1\r\n");
-                }
-                "2" => {
-                    LEFT_TRAFFIC_INTENSITY_LEVEL.store(2, Ordering::Relaxed);
-                    uart_send_string(&dp, "Left traffic intensity set to 2\r\n");
-                }
-                "help" => {
-                    uart_send_string(&dp, "Commands: 0, 1, 2 (traffic intensity)\r\n");
-                }
-                "status" => {
-                    uart_send_string(&dp, "Traffic light system running\r\n");
-                }
-                _ => {
-                    uart_send_string(&dp, "Unknown command: ");
-                    uart_send_string(&dp, command.as_str());
-                    uart_send_string(&dp, "\r\n");
-                }
-            }
-        }
-    }
-
+        // Remove the UART processing from here - it's now handled in the interrupt
         let left_intensity = LEFT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
         let right_intensity = RIGHT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
 
         let mut delay = get_traffic_delays(left_intensity, right_intensity);
+        
         //right green, left red
+        CURRENT_TRAFFIC_STATE.store(STATE_RIGHT_GREEN_LEFT_RED, Ordering::Relaxed);
         gpio_write_pin(&dp.GPIOA, RED_LEFT, ON);
         gpio_write_pin(&dp.GPIOA, GREEN_RIGHT, ON);
 
         delay_s(delay[0] / TESTING_FACTOR);
+        
         // yellow
+        CURRENT_TRAFFIC_STATE.store(STATE_RIGHT_YELLOW_LEFT_RED, Ordering::Relaxed);
         gpio_write_pin(&dp.GPIOA, GREEN_RIGHT, OFF);
         gpio_write_pin(&dp.GPIOA, YELLOW_RIGHT, ON);
 
@@ -130,6 +103,7 @@ fn main() -> ! {
         delay = get_traffic_delays(left_intensity, right_intensity);
 
         //left green, right red
+        CURRENT_TRAFFIC_STATE.store(STATE_LEFT_GREEN_RIGHT_RED, Ordering::Relaxed);
         gpio_write_pin(&dp.GPIOA, RED_LEFT, OFF);
         gpio_write_pin(&dp.GPIOA, YELLOW_RIGHT, OFF);
         gpio_write_pin(&dp.GPIOA, GREEN_LEFT, ON);
@@ -137,6 +111,7 @@ fn main() -> ! {
         delay_s(delay[2] / TESTING_FACTOR);
 
         //yellow
+        CURRENT_TRAFFIC_STATE.store(STATE_LEFT_YELLOW_RIGHT_RED, Ordering::Relaxed);
         gpio_write_pin(&dp.GPIOA, GREEN_LEFT, OFF);
         gpio_write_pin(&dp.GPIOA, YELLOW_LEFT, ON);
         delay_s(delay[3] / TESTING_FACTOR);

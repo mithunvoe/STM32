@@ -2,13 +2,13 @@ use core::sync::atomic::Ordering;
 use cortex_m::peripheral::DWT;
 use stm32f4::stm32f446::{self, EXTI, interrupt};
 
-use crate::constants::*;
+use crate::{constants::*};
 use crate::gpio_helpers::gpio_write_pin;
 use crate::traffic::{
     LEFT_BLINK_COUNTER, LEFT_BLINK_STATE, LEFT_INDICATOR_RATE, LEFT_TRAFFIC_INTENSITY_LEVEL,
     RIGHT_BLINK_COUNTER, RIGHT_BLINK_STATE, RIGHT_INDICATOR_RATE, RIGHT_TRAFFIC_INTENSITY_LEVEL,
 };
-use crate::uart::{uart_add_to_buffer};
+use crate::uart::{uart_add_to_buffer, uart_get_string, uart_line_available, uart_send_string};
 
 static mut LAST_EXTI4_TICK: u32 = 0;
 static mut LAST_EXTI9_5_TICK: u32 = 0;
@@ -21,6 +21,70 @@ fn USART2() {
     if dp.USART2.sr.read().rxne().bit_is_set() {
         let received_byte = dp.USART2.dr.read().bits() as u8;
         uart_add_to_buffer(received_byte);
+        
+        // Process commands immediately when a complete line is available
+        if uart_line_available() {
+            if let Some(command) = uart_get_string() {
+                match command.as_str() {
+                    "Left Low" => {
+                        LEFT_TRAFFIC_INTENSITY_LEVEL.store(0, Ordering::Relaxed);
+                        RIGHT_TRAFFIC_INTENSITY_LEVEL.store(0, Ordering::Relaxed);
+                        uart_send_string(&dp, "Traffic intensity set to 0\r\n");
+                    }
+                    "Left Medium" => {
+                        LEFT_TRAFFIC_INTENSITY_LEVEL.store(1, Ordering::Relaxed);
+                        uart_send_string(&dp, "Left traffic intensity set to 1\r\n");
+                    }
+                    "Left High" => {
+                        LEFT_TRAFFIC_INTENSITY_LEVEL.store(2, Ordering::Relaxed);
+                        uart_send_string(&dp, "Left traffic intensity set to 2\r\n");
+                    }
+                    "Right Low" => {
+                        RIGHT_TRAFFIC_INTENSITY_LEVEL.store(0, Ordering::Relaxed);
+                        uart_send_string(&dp, "Traffic intensity set to 0\r\n");
+                    }
+                    "Right Medium" => {
+                        RIGHT_TRAFFIC_INTENSITY_LEVEL.store(1, Ordering::Relaxed);
+                        uart_send_string(&dp, "Right traffic intensity set to 1\r\n");
+                    }
+                    "Right High" => {
+                        RIGHT_TRAFFIC_INTENSITY_LEVEL.store(2, Ordering::Relaxed);
+                        uart_send_string(&dp, "Right traffic intensity set to 2\r\n");
+                    }
+                    "help" => {
+                        uart_send_string(&dp, "Available commands:\r\n");
+                        uart_send_string(&dp, "Left Low - Set left traffic intensity to low\r\n");
+                        uart_send_string(&dp, "Left Medium - Set left traffic intensity to medium\r\n");
+                        uart_send_string(&dp, "Left High - Set left traffic intensity to high\r\n");
+                        uart_send_string(&dp, "Right Low - Set right traffic intensity to low\r\n");
+                        uart_send_string(&dp, "Right Medium - Set right traffic intensity to medium\r\n");
+                        uart_send_string(&dp, "Right High - Set right traffic intensity to high\r\n");
+                    }
+                    "status" => {
+                        let left_intensity = LEFT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
+                        let right_intensity = RIGHT_TRAFFIC_INTENSITY_LEVEL.load(Ordering::Relaxed);
+                        uart_send_string(&dp, "Current traffic intensities:\r\n");
+                        match left_intensity {
+                            0 => uart_send_string(&dp, "Left Intensity: 0\r\n"),
+                            1 => uart_send_string(&dp, "Left Intensity: 1\r\n"),
+                            2 => uart_send_string(&dp, "Left Intensity: 2\r\n"),
+                            _ => uart_send_string(&dp, "Left Intensity: Unknown\r\n"),
+                        }
+                        match right_intensity {
+                            0 => uart_send_string(&dp, "Right Intensity: 0\r\n"),
+                            1 => uart_send_string(&dp, "Right Intensity: 1\r\n"),
+                            2 => uart_send_string(&dp, "Right Intensity: 2\r\n"),
+                            _ => uart_send_string(&dp, "Right Intensity: Unknown\r\n"),
+                        }
+                    }
+                    _ => {
+                        uart_send_string(&dp, "Unknown command: ");
+                        uart_send_string(&dp, command.as_str());
+                        uart_send_string(&dp, "\r\n");
+                    }
+                }
+            }
+        }
     }
 }
 
