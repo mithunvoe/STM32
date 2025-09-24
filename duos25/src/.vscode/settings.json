@@ -1,0 +1,30 @@
+{
+    "files.associations": {
+        "clock.h": "c",
+        "sys_init.h": "c",
+        "stddef.h": "c",
+        "sys_clock.h": "c",
+        "sys_usart.h": "c",
+        "usartringbuffer.h": "c",
+        "timer.h": "c",
+        "cm4.h": "c",
+        "kmain.h": "c",
+        "serial_lin.h": "c",
+        "sys_bus_matrix.h": "c",
+        "debug.h": "c",
+        "types.h": "c",
+        "sys_spi.h": "c",
+        "err.h": "c",
+        "error.h": "c",
+        "system_config.h": "c",
+        "kstdio.h": "c",
+        "sys_gpio.h": "c",
+        "assert.h": "c",
+        "mcu_info.h": "c",
+        "m5stack_error.h": "c",
+        "m5stack_cmd.h": "c",
+        "kstring.h": "c"
+    },
+    "cmake.configureOnOpen": false,
+    "C_Cpp.errorSquiggles": "enabled"
+}

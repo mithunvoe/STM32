@@ -1,0 +1,61 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "name": "Debug (OpenOCD)",
+            "servertype": "openocd",
+            "cwd": "${workspaceRoot}",
+            //"preLaunchTask": "cd compile && make all",
+            "device": "STM32F446RE",
+            "interface": "swd",
+            "runToEntryPoint": "kmain",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            "showDevDebugOutput": "parsed",
+            "executable": "./compile/build/final.elf",
+            "configFiles": [
+                "/usr/share/openocd/scripts/board/stm32f4discovery.cfg",
+                "/usr/share/openocd/scripts/interface/stlink.cfg"
+            ],
+            "svdFile": "/home/tushar/STM32/svdfile/STM32F446.svd",
+            "swoConfig": 
+            {
+                // "enabled": true,
+                // "cpuFrequency": 180000000,
+                // "swoFrequency": 4000000,
+                // "source": "probe",
+                // "decoders": [
+                //     { "type": "console", "label": "ITM", "port": 0, "encoding": "ascii" }
+                // ]
+            }
+        },
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "enter program name, for example ${workspaceFolder}/target/duos",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}
