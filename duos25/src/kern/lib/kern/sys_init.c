@@ -98,4 +98,11 @@ void SYS_ROUTINE(void)
 void display_group_info(void)
 {
 	kprintf("Group Members: Kabya Mithun Saha - Muhaiminul Islam Ninad\n");
+	while (1)
+	{
+		ms_delay(1);
+		kprintf("ms Tick: %d\n", __getTime());
+	}
+	
+
 }

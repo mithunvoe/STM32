@@ -58,7 +58,7 @@ void kmain(void)
         if (t1 == t0)
         {
             use_tim2_delay = 1;
-            kprintf("[WARN] SysTick not advancing; using TIM2 Delay() for blink.\r\n");
+            // kprintf("[WARN] SysTick not advancing; using TIM2 Delay() for blink.\r\n");
         }
     }
     /* Configure LED (e.g., Nucleo-F446RE LD2 on PA5) */
