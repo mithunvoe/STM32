@@ -48,19 +48,8 @@ void __SysTick_init(uint32_t reload)
     uint32_t ahb_clk = __AHB_CLK();
     uint32_t reload_val = 0U;
 
-    // if (reload == 0U) {
-    //     /* default to 1 kHz if invalid input */
-    //     reload = 1000U;
-    // }
 
     reload_val = ahb_clk / reload; /* number of core cycles per tick */
-    // if (reload_val == 0U) {
-    //     reload_val = 1U; /* minimum */
-    // }
-    // /* SysTick LOAD is 24-bit and stores (reload_val - 1) */
-    // if (reload_val > (SysTick_LOAD_RELOAD_Msk + 1U)) {
-    //     reload_val = (SysTick_LOAD_RELOAD_Msk + 1U);
-    // }
 
     SYSTICK->LOAD = (reload_val - 1U) & SysTick_LOAD_RELOAD_Msk;
     SYSTICK->VAL = 0U; /* reset current counter */
