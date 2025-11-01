@@ -66,6 +66,7 @@ times.o \
 kunistd.o \
 ktimes.o \
 syscall.o \
+kservice.o \
 serial_lin.o \
 UsartRingBuffer.o \
 timer.o \
@@ -135,6 +136,9 @@ times.o: $(USERLAND)/utils/times.c
 syscall.o: $(OS_PATH)/syscall/syscall.c
 	$(CC) $(CFLAGS) $(INCLUDE) $^ -o $(OBJECT)/$@
 
+kservice.o: $(OS_PATH)/syscall/kservice.c
+	$(CC) $(CFLAGS) $(INCLUDE) $^ -o $(OBJECT)/$@
+
 serial_lin.o: $(OS_PATH)/lib/kern/serial_lin.c
 	$(CC) $(CFLAGS) $(INCLUDE) $^ -o $(OBJECT)/$@
 
@@ -173,14 +177,15 @@ duos: $(OBJECT)/kmath.o \
 	$(OBJECT)/sys_init.o \
 	$(OBJECT)/unistd.o \
 	$(OBJECT)/times.o \
+	$(OBJECT)/syscall.o \
+	$(OBJECT)/kservice.o \
 	$(OBJECT)/serial_lin.o \
 	$(OBJECT)/UsartRingBuffer.o \
 	$(OBJECT)/debug.o \
 	$(OBJECT)/timer.o \
 	$(OBJECT)/sys_err.o \
 	$(OBJECT)/sys_rtc.o  
-	
-
+	@mkdir -p $(TARGET)
 	$(CC) $(LDFLAGS) $^ -o $(TARGET)/$@
 
 #	$(OBJECT)/m5stack.o \
@@ -200,14 +205,15 @@ final.elf: $(OBJECT)/kmath.o \
 	$(OBJECT)/sys_init.o \
 	$(OBJECT)/unistd.o \
 	$(OBJECT)/times.o \
+	$(OBJECT)/syscall.o \
+	$(OBJECT)/kservice.o \
 	$(OBJECT)/serial_lin.o \
 	$(OBJECT)/UsartRingBuffer.o \
 	$(OBJECT)/debug.o \
 	$(OBJECT)/timer.o \
 	$(OBJECT)/sys_err.o \
 	$(OBJECT)/sys_rtc.o 
-	
-	
+	@mkdir -p build
 	$(CC) $(LDFLAGS) $^ -o build/$@
 	
 # $(OBJECT)/m5stack.o 

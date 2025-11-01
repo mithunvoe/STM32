@@ -24,6 +24,8 @@ LOAD object/kstdio.o
 LOAD object/sys_init.o
 LOAD object/unistd.o
 LOAD object/times.o
+LOAD object/syscall.o
+LOAD object/kservice.o
 LOAD object/serial_lin.o
 LOAD object/UsartRingBuffer.o
 LOAD object/debug.o
@@ -31,7 +33,7 @@ LOAD object/timer.o
 LOAD object/sys_err.o
 LOAD object/sys_rtc.o
 
-.text           0x08000000     0x4818
+.text           0x08000000     0x50d4
                 0x08000000                        _stext = .
  *(.isr_vector)
  .isr_vector    0x08000000      0x1c4 object/stm32_startup.o
@@ -219,84 +221,99 @@ LOAD object/sys_rtc.o
                 0x08003264                display_group_info
  .text          0x08003278        0x0 object/unistd.o
  .text          0x08003278        0x0 object/times.o
- .text          0x08003278      0x1b8 object/serial_lin.o
-                0x08003278                SerialLin2_init
-                0x08003310                SerialLin6_init
-                0x080033a8                USART2_Handler
-                0x080033bc                USART6_Handler
-                0x080033d0                noIntWrite
-                0x08003400                noIntSendString
- .text          0x08003430      0xb7c object/UsartRingBuffer.o
-                0x08003430                Ringbuf_init
-                0x080034ca                Look_for
-                0x0800356a                GetDataFromBuffer
-                0x080036aa                Uart_flush
-                0x080036e6                Uart_peek
-                0x08003760                Uart_read
-                0x08003800                Uart_write
-                0x080038b8                IsDataAvailable
-                0x0800393c                Get_after
-                0x0800399a                Uart_sendstring
-                0x080039c8                Uart_printbase
-                0x08003a60                Copy_upto
-                0x08003b60                Wait_for
-                0x08003c4c                look_for_frame
-                0x08003db2                Uart_isr
-                0x08003ec0                update_tail
-                0x08003f26                debug_buffer
- .text          0x08003fac      0x110 object/debug.o
-                0x08003fac                __debugRamUsage
-                0x08003ff8                __digitalWriteDebugButton
-                0x08004054                __digitalReadDebugButton
-                0x08004084                __alalogReadDebug
-                0x0800409c                __analogWriteDebug
- .text          0x080040bc      0x228 object/timer.o
-                0x080040f8                ConfigTimer2ForSystem
-                0x08004174                Delay_micro_second
-                0x08004208                Delay
-                0x08004236                getMiliseconds
-                0x08004278                getMicroseconds
-                0x080042a8                TIM2_Handler
- .text          0x080042e4       0x14 object/sys_err.o
-                0x080042e4                Error_Handler
- .text          0x080042f8      0x364 object/sys_rtc.o
-                0x080042f8                SYS_RTC_init
-                0x080045a0                get_timeofDay
+ .text          0x08003278      0x10e object/syscall.o
+                0x08003278                SVC_Handler_C
+                0x08003370                syscall
+ *fill*         0x08003386        0x2 
+ .text          0x08003388       0xb4 object/kservice.o
+                0x08003388                k_exit
+                0x0800339c                k_getpid
+                0x080033b4                k_read
+                0x080033d0                k_write
+                0x080033ec                k_time
+                0x08003408                k_reboot
+                0x08003416                k_yield
+ .text          0x0800343c      0x1b8 object/serial_lin.o
+                0x0800343c                SerialLin2_init
+                0x080034d4                SerialLin6_init
+                0x0800356c                USART2_Handler
+                0x08003580                USART6_Handler
+                0x08003594                noIntWrite
+                0x080035c4                noIntSendString
+ .text          0x080035f4      0xb7c object/UsartRingBuffer.o
+                0x080035f4                Ringbuf_init
+                0x0800368e                Look_for
+                0x0800372e                GetDataFromBuffer
+                0x0800386e                Uart_flush
+                0x080038aa                Uart_peek
+                0x08003924                Uart_read
+                0x080039c4                Uart_write
+                0x08003a7c                IsDataAvailable
+                0x08003b00                Get_after
+                0x08003b5e                Uart_sendstring
+                0x08003b8c                Uart_printbase
+                0x08003c24                Copy_upto
+                0x08003d24                Wait_for
+                0x08003e10                look_for_frame
+                0x08003f76                Uart_isr
+                0x08004084                update_tail
+                0x080040ea                debug_buffer
+ .text          0x08004170      0x110 object/debug.o
+                0x08004170                __debugRamUsage
+                0x080041bc                __digitalWriteDebugButton
+                0x08004218                __digitalReadDebugButton
+                0x08004248                __alalogReadDebug
+                0x08004260                __analogWriteDebug
+ .text          0x08004280      0x228 object/timer.o
+                0x080042bc                ConfigTimer2ForSystem
+                0x08004338                Delay_micro_second
+                0x080043cc                Delay
+                0x080043fa                getMiliseconds
+                0x0800443c                getMicroseconds
+                0x0800446c                TIM2_Handler
+ .text          0x080044a8       0x14 object/sys_err.o
+                0x080044a8                Error_Handler
+ .text          0x080044bc      0x364 object/sys_rtc.o
+                0x080044bc                SYS_RTC_init
+                0x08004764                get_timeofDay
  *(.rodata)
- .rodata        0x0800465c       0x64 object/mcu_info.o
- .rodata        0x080046c0        0x6 object/kstring.o
- *fill*         0x080046c6        0x2 
- .rodata        0x080046c8        0x4 object/kmain.o
- .rodata        0x080046cc        0x4 object/stm32_startup.o
-                0x080046cc                STACK_START
- .rodata        0x080046d0       0x18 object/sys_clock.o
-                0x080046d0                AHBPrescTable
-                0x080046e0                APBPrescTable
- .rodata        0x080046e8      0x12f object/sys_init.o
-                0x08004818                        . = ALIGN (0x4)
- *fill*         0x08004817        0x1 
-                0x08004818                        _etext = .
-                0x08004818                        _la_data = LOADADDR (.data)
+ .rodata        0x08004820       0x64 object/mcu_info.o
+ .rodata        0x08004884        0x6 object/kstring.o
+ *fill*         0x0800488a        0x2 
+ .rodata        0x0800488c        0x4 object/kmain.o
+ .rodata        0x08004890        0x4 object/stm32_startup.o
+                0x08004890                STACK_START
+ .rodata        0x08004894       0x18 object/sys_clock.o
+                0x08004894                AHBPrescTable
+                0x080048a4                APBPrescTable
+ .rodata        0x080048ac      0x12f object/sys_init.o
+ *fill*         0x080049db        0x1 
+ .rodata        0x080049dc      0x6f8 object/syscall.o
+                0x08004fcc                sys_errlist
+                0x080050d0                sys_nerr
+                0x080050d4                        . = ALIGN (0x4)
+                0x080050d4                        _etext = .
+                0x080050d4                        _la_data = LOADADDR (.data)
 
-.glue_7         0x08004818        0x0
- .glue_7        0x08004818        0x0 linker stubs
+.glue_7         0x080050d4        0x0
+ .glue_7        0x080050d4        0x0 linker stubs
 
-.glue_7t        0x08004818        0x0
- .glue_7t       0x08004818        0x0 linker stubs
+.glue_7t        0x080050d4        0x0
+ .glue_7t       0x080050d4        0x0 linker stubs
 
-.vfp11_veneer   0x08004818        0x0
- .vfp11_veneer  0x08004818        0x0 linker stubs
+.vfp11_veneer   0x080050d4        0x0
+ .vfp11_veneer  0x080050d4        0x0 linker stubs
 
-.v4_bx          0x08004818        0x0
- .v4_bx         0x08004818        0x0 linker stubs
+.v4_bx          0x080050d4        0x0
+ .v4_bx         0x080050d4        0x0 linker stubs
 
-.iplt           0x08004818        0x0
- .iplt          0x08004818        0x0 object/kfloat.o
+.iplt           0x080050d4        0x0
+ .iplt          0x080050d4        0x0 object/kfloat.o
 
-.rel.dyn        0x08004818        0x0
- .rel.iplt      0x08004818        0x0 object/kfloat.o
+.rel.dyn        0x080050d4        0x0
+ .rel.iplt      0x080050d4        0x0 object/kfloat.o
 
-.data           0x20000000       0x6c load address 0x08004818
+.data           0x20000000       0x6c load address 0x080050d4
                 0x20000000                        _sdata = .
  *(.data)
  .data          0x20000000        0x0 object/kmath.o
@@ -313,7 +330,9 @@ LOAD object/sys_rtc.o
  .data          0x20000061        0x0 object/sys_init.o
  .data          0x20000061        0x0 object/unistd.o
  .data          0x20000061        0x0 object/times.o
- *fill*         0x20000061        0x3 
+ .data          0x20000061        0x0 object/syscall.o
+ *fill*         0x20000061        0x1 
+ .data          0x20000062        0x2 object/kservice.o
  .data          0x20000064        0x8 object/serial_lin.o
                 0x20000064                errObj
  .data          0x2000006c        0x0 object/UsartRingBuffer.o
@@ -324,10 +343,10 @@ LOAD object/sys_rtc.o
                 0x2000006c                        . = ALIGN (0x4)
                 0x2000006c                        _edata = .
 
-.igot.plt       0x2000006c        0x0 load address 0x08004884
+.igot.plt       0x2000006c        0x0 load address 0x08005140
  .igot.plt      0x2000006c        0x0 object/kfloat.o
 
-.bss            0x2000006c      0x8f9 load address 0x08004884
+.bss            0x2000006c      0x8fd load address 0x08005140
                 0x2000006c                        _sbss = .
  *(.bss)
  .bss           0x2000006c        0x0 object/kmath.o
@@ -348,18 +367,20 @@ LOAD object/sys_rtc.o
  .bss           0x200000c4        0x0 object/sys_init.o
  .bss           0x200000c4        0x0 object/unistd.o
  .bss           0x200000c4        0x0 object/times.o
- .bss           0x200000c4      0x890 object/serial_lin.o
-                0x200000c4                huart2
-                0x2000050c                huart6
- .bss           0x20000954        0x0 object/UsartRingBuffer.o
- .bss           0x20000954        0xc object/debug.o
-                0x20000958                CURRENT_MSP
-                0x2000095c                DEBUG_BUTTON
-                0x2000095e                DEBUG_ANALOG_IO
- .bss           0x20000960        0x5 object/timer.o
- .bss           0x20000965        0x0 object/sys_err.o
- .bss           0x20000965        0x0 object/sys_rtc.o
-                0x20000965                        _ebss = .
+ .bss           0x200000c4        0x0 object/syscall.o
+ .bss           0x200000c4        0x4 object/kservice.o
+ .bss           0x200000c8      0x890 object/serial_lin.o
+                0x200000c8                huart2
+                0x20000510                huart6
+ .bss           0x20000958        0x0 object/UsartRingBuffer.o
+ .bss           0x20000958        0xc object/debug.o
+                0x2000095c                CURRENT_MSP
+                0x20000960                DEBUG_BUTTON
+                0x20000962                DEBUG_ANALOG_IO
+ .bss           0x20000964        0x5 object/timer.o
+ .bss           0x20000969        0x0 object/sys_err.o
+ .bss           0x20000969        0x0 object/sys_rtc.o
+                0x20000969                        _ebss = .
 OUTPUT(target/duos elf32-littlearm)
 LOAD linker stubs
 
@@ -379,6 +400,8 @@ LOAD linker stubs
  .comment       0x00000026       0x27 object/sys_init.o
  .comment       0x00000026       0x27 object/unistd.o
  .comment       0x00000026       0x27 object/times.o
+ .comment       0x00000026       0x27 object/syscall.o
+ .comment       0x00000026       0x27 object/kservice.o
  .comment       0x00000026       0x27 object/serial_lin.o
  .comment       0x00000026       0x27 object/UsartRingBuffer.o
  .comment       0x00000026       0x27 object/debug.o
@@ -417,14 +440,18 @@ LOAD linker stubs
  .ARM.attributes
                 0x0000028a       0x32 object/times.o
  .ARM.attributes
-                0x000002bc       0x32 object/serial_lin.o
+                0x000002bc       0x32 object/syscall.o
  .ARM.attributes
-                0x000002ee       0x32 object/UsartRingBuffer.o
+                0x000002ee       0x32 object/kservice.o
  .ARM.attributes
-                0x00000320       0x32 object/debug.o
+                0x00000320       0x32 object/serial_lin.o
  .ARM.attributes
-                0x00000352       0x32 object/timer.o
+                0x00000352       0x32 object/UsartRingBuffer.o
  .ARM.attributes
-                0x00000384       0x32 object/sys_err.o
+                0x00000384       0x32 object/debug.o
  .ARM.attributes
-                0x000003b6       0x32 object/sys_rtc.o
+                0x000003b6       0x32 object/timer.o
+ .ARM.attributes
+                0x000003e8       0x32 object/sys_err.o
+ .ARM.attributes
+                0x0000041a       0x32 object/sys_rtc.o
