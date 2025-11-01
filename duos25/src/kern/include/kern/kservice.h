@@ -27,11 +27,70 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
- 
-#ifndef _SYSCALL_H
-#define _SYSCALL_H
-#include <stdint.h>
-void syscall(uint16_t);
-void SVC_Handler_C(uint32_t *stack_frame);
+
+#ifndef __KSERVICE_H
+#define __KSERVICE_H
+
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+#include <stdint.h>
+#include <syscall_def.h>
+#include <types.h>
+
+/* Kernel service function declarations */
+
+/**
+ * @brief Exit the current task and mark it as terminated
+ * @param status Exit status
+ */
+void k_exit(int status);
+
+/**
+ * @brief Get the current process ID (mock implementation)
+ * @return Mock task ID
+ */
+uint16_t k_getpid(void);
+
+/**
+ * @brief Read data from a file descriptor (mock implementation)
+ * @param fd File descriptor
+ * @param buf Buffer to store read data
+ * @param count Number of bytes to read
+ * @return Number of bytes read (mock)
+ */
+int k_read(int fd, void *buf, size_t count);
+
+/**
+ * @brief Write data to a file descriptor (mock implementation)
+ * @param fd File descriptor
+ * @param buf Buffer containing data to write
+ * @param count Number of bytes to write
+ * @return Number of bytes written (mock)
+ */
+int k_write(int fd, const void *buf, size_t count);
+
+/**
+ * @brief Get current time (mock implementation)
+ * @return Mock elapsed time
+ */
+uint32_t k_time(void);
+
+/**
+ * @brief Reboot the system (mock implementation)
+ */
+void k_reboot(void);
+
+/**
+ * @brief Yield CPU to allow task rescheduling
+ * Triggers PendSV for context switch
+ */
+void k_yield(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __KSERVICE_H */
 

@@ -1,0 +1,20 @@
+CompileFlags:
+  Add:
+    - -I/media/ninadgns/ssd/Workspace/STM/STM32/duos25/src/kern/include
+    - -I/media/ninadgns/ssd/Workspace/STM/STM32/duos25/src/kern/arch/include
+    - -I/media/ninadgns/ssd/Workspace/STM/STM32/duos25/src/kern/arch/include/cm4
+    - -I/media/ninadgns/ssd/Workspace/STM/STM32/duos25/src/kern/arch/stm32f446re/include
+    - -I/media/ninadgns/ssd/Workspace/STM/STM32/duos25/src/kern/include/kern
+    - -I/media/ninadgns/ssd/Workspace/STM/STM32/duos25/src/kern/dev/include
+    - -I/media/ninadgns/ssd/Workspace/STM/STM32/duos25/src/userland/include
+    - -I/media/ninadgns/ssd/Workspace/STM/STM32/duos25/src/kern/sys_config
+    - -I/media/ninadgns/ssd/Workspace/STM/STM32/duos25/src/kern/include/sotom
+    - -std=gnu11
+    - -Wall
+    - -O0
+    # ARM-specific flags (clangd may not fully understand these, but include for reference)
+    # -mcpu=cortex-m4
+    # -mthumb
+    # -mfloat-abi=softfp
+    # -mfpu=fpv4-sp-d16
+

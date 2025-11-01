@@ -38,6 +38,7 @@
 #define SYS_vfork        1
 #define SYS_execv        2
 #define SYS__exit        3
+#define SYS_exit         SYS__exit    // Alias for consistency
 #define SYS_waitpid      4
 #define SYS_getpid       5
 #define SYS_getppid      6
@@ -144,12 +145,21 @@
 
 //-- Time-related --
 #define SYS___time       113
+#define SYS_time         SYS___time    // Alias for consistency
 #define SYS___settime    114
 #define SYS_nanosleep    115
 
 //-- Other reboot scheduling etc. --
 #define SYS_sync         118
 #define SYS_reboot       119
-#define SYS_yield        120	
+#define SYS_yield        120
+
+// Standard file descriptors (as per assignment requirement)
+#ifndef STDIN_FILENO
+#define STDIN_FILENO     0
+#endif
+#ifndef STDOUT_FILENO
+#define STDOUT_FILENO    1
+#endif
 
 #endif /*End of SYSCALL_DEF_H */

@@ -32,30 +32,95 @@
 #include <syscall_def.h>
 #include <errno.h>
 #include <errmsg.h>
+#include <kservice.h>
+#include <stdint.h>
+
+/**
+ * Stack frame layout on exception entry (Cortex-M):
+ * stack_frame[0] = R0
+ * stack_frame[1] = R1
+ * stack_frame[2] = R2
+ * stack_frame[3] = R3
+ * stack_frame[4] = R12
+ * stack_frame[5] = LR (EXC_RETURN value)
+ * stack_frame[6] = PC (points to instruction after SVC)
+ * stack_frame[7] = xPSR
+ */
+
+/**
+ * @brief C dispatcher for SVC handler
+ * Extracts syscall ID from SVC instruction and dispatches to kernel service
+ * @param stack_frame Pointer to the exception stack frame
+ */
+void SVC_Handler_C(uint32_t *stack_frame)
+{
+	uint8_t svc_id;
+	uint16_t *svc_instr;
+	
+	/* Extract syscall ID from SVC instruction
+	 * PC (stack_frame[6]) points to instruction after SVC
+	 * In Thumb mode, instructions are 2 bytes, so subtract 2
+	 * SVC instruction format: SVC #imm, where imm is in bits [7:0]
+	 */
+		svc_instr = (uint16_t *)(stack_frame[6] - 2);
+	svc_id = (uint8_t)(*svc_instr & 0xFF);
+	
+	/* Extract arguments from stack frame */
+	uint32_t arg0 = stack_frame[0];  /* R0 - syscall number or first arg */
+	uint32_t arg1 = stack_frame[1];  /* R1 - second argument */
+	uint32_t arg2 = stack_frame[2];  /* R2 - third argument */
+	uint32_t arg3 = stack_frame[3];  /* R3 - fourth argument */
+	(void)arg3;  /* Reserved for future syscalls */
+	
+	/* Dispatch based on syscall ID */
+	switch (svc_id)
+	{
+		case SYS_exit:
+			k_exit((int)arg0);  /* arg0 is exit status */
+			stack_frame[0] = 0;  /* Return value */
+			break;
+			
+		case SYS_getpid:
+			stack_frame[0] = (uint32_t)k_getpid();
+			break;
+			
+		case SYS_read:
+			stack_frame[0] = (uint32_t)k_read((int)arg0, (void *)arg1, (size_t)arg2);
+			break;
+			
+		case SYS_write:
+			stack_frame[0] = (uint32_t)k_write((int)arg0, (const void *)arg1, (size_t)arg2);
+			break;
+			
+		case SYS_time:
+			stack_frame[0] = (uint32_t)k_time();
+			break;
+			
+		case SYS_reboot:
+			k_reboot();
+			stack_frame[0] = 0;
+			break;
+			
+		case SYS_yield:
+			k_yield();
+			stack_frame[0] = 0;
+			break;
+			
+		default:
+			/* Unknown syscall - return error */
+			stack_frame[0] = (uint32_t)(-ENOSYS);
+			break;
+	}
+	
+	/* Return to user mode - hardware will automatically restore context */
+	/* The EXC_RETURN value in LR ensures return to Thread mode with PSP */
+}
+
+/* Legacy syscall function - kept for compatibility */
 void syscall(uint16_t callno)
 {
-/* The SVC_Handler calls this function to evaluate and execute the actual function */
-/* Take care of return value or code */
-	switch(callno)
-	{
-		/* Write your code to call actual function (kunistd.h/c or times.h/c and handle the return value(s) */
-		case SYS_read: 
-			break;
-		case SYS_write:
-			break;
-		case SYS_reboot:
-			break;	
-		case SYS__exit:
-			break;
-		case SYS_getpid:
-			break;
-		case SYS___time:
-			break;
-		case SYS_yield:
-			break;				
-		/* return error code see error.h and errmsg.h ENOSYS sys_errlist[ENOSYS]*/	
-		default: ;
-	}
-/* Handle SVC return here */
+	/* This function is deprecated in favor of SVC_Handler_C */
+	/* It's kept for backward compatibility but should not be used */
+	(void)callno;
 }
 

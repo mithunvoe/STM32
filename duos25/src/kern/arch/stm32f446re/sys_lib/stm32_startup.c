@@ -29,6 +29,9 @@
  */
  
 #include <stm32_startup.h>
+
+/* Forward declaration of C dispatcher */
+void SVC_Handler_C(uint32_t *stack_frame);
 const uint32_t STACK_START = (uint32_t)SRAM_END;
 uint32_t NVIC_VECTOR[] __attribute__((section (".isr_vector")))={
 	STACK_START,
@@ -186,11 +189,16 @@ void BusFault_Handler(void)
 	while(1);
 }
 
-void SVCall_Handler(void){
-/* Write code for SVC handler */
-/* the handler function evntually call syscall function with a call number */
-
-
+/* Naked assembly function to handle SVC exception entry */
+__attribute__((naked)) void SVCall_Handler(void)
+{
+	asm volatile (
+		"TST lr, #4       \n"  /* Test bit 2 of EXC_RETURN */
+		"ITE EQ           \n"  /* If-Then-Else: EQ means bit 2 == 0 (MSP) */
+		"MRSEQ r0, MSP    \n"  /* If bit 2 == 0 -> use MSP */
+		"MRSNE r0, PSP    \n"  /* If bit 2 == 1 -> use PSP (Thread Mode) */
+		"B SVC_Handler_C  \n"  /* Branch to C function with stack frame pointer in R0 */
+	);
 }
 
 

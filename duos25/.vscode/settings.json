@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "types.h": "c",
-        "sys_clock.h": "c"
+        "sys_clock.h": "c",
+        "cm4.h": "c",
+        "sys_init.h": "c"
     }
 }
