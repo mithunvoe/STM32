@@ -38,6 +38,7 @@
 #include <kstring.h>
 #include <sys_gpio.h>
 #include <system_config.h>
+
 #include <timer.h>
 #ifndef DEBUG
 #define DEBUG 1
@@ -45,22 +46,6 @@
 void kmain(void)
 {
     __sys_init();
-    /* Quick check: if SysTick isn't ticking, we'll fall back to TIM2-based delay */
-    uint8_t use_tim2_delay = 1;
-    {
-        uint32_t t0 = __getTime();
-        /* short wait using busy loop on CPU cycles */
-        for (volatile uint32_t i = 0; i < 100000U; ++i)
-        {
-            __NOP();
-        }
-        uint32_t t1 = __getTime();
-        if (t1 == t0)
-        {
-            use_tim2_delay = 1;
-            // kprintf("[WARN] SysTick not advancing; using TIM2 Delay() for blink.\r\n");
-        }
-    }
     /* Configure LED (e.g., Nucleo-F446RE LD2 on PA5) */
     {
         /* Enable GPIOA clock (AHB1ENR bit 0) */
@@ -83,15 +68,9 @@ void kmain(void)
         /* Toggle LED every BLINK_PERIOD_MS */
         static uint8_t on = 0;
         on ^= 1U;
-        GPIO_WritePin(GPIOA, GPIO_PIN_5, on ? GPIO_PIN_SET : GPIO_PIN_RESET);
-        if (use_tim2_delay)
-        {
-            Delay(BLINK_PERIOD_MS);
-        }
-        else
-        {
-            ms_delay(BLINK_PERIOD_MS);
-        }
-        kprintf("%d\n", ++i);
+        kprintf("%d\n", i++);
+        ms_delay(1000);
+        // GPIO_WritePin(GPIOA, GPIO_PIN_5, on ? GPIO_PIN_SET : GPIO_PIN_RESET);
+        // ms_delay(10);
     }
 }

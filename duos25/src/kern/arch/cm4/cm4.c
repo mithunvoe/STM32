@@ -43,9 +43,8 @@ static volatile uint32_t s_msTick = 0U;
 
 void __SysTick_init(uint32_t reload)
 {
-    
     /* 'reload' is expected as tick frequency in Hz (e.g., 1000 for 1 ms tick) */
-    uint32_t ahb_clk = __AHB_CLK();
+    uint32_t ahb_clk = __AHB_CLK()*1000000U;
     uint32_t reload_val = 0U;
 
 
@@ -135,7 +134,6 @@ uint32_t __get__Hour(void){
 }
 void SysTick_Handler(void)
 {
-    /* Increment millisecond tick counter */
     s_msTick++;
 }
 
