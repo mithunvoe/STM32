@@ -197,7 +197,10 @@ __attribute__((naked)) void SVCall_Handler(void)
 		"ITE EQ           \n"  /* If-Then-Else: EQ means bit 2 == 0 (MSP) */
 		"MRSEQ r0, MSP    \n"  /* If bit 2 == 0 -> use MSP */
 		"MRSNE r0, PSP    \n"  /* If bit 2 == 1 -> use PSP (Thread Mode) */
-		"B SVC_Handler_C  \n"  /* Branch to C function with stack frame pointer in R0 */
+		"MOV r4, lr       \n"  /* Save EXC_RETURN to callee-saved register */
+		"BL SVC_Handler_C \n" /* Branch with link to C function (preserves r4) */
+		"MOV lr, r4       \n"  /* Restore EXC_RETURN value */
+		"BX lr            \n"  /* Return from exception (hardware restores context) */
 	);
 }
 

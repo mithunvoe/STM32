@@ -34,6 +34,7 @@
 #include <errmsg.h>
 #include <kservice.h>
 #include <stdint.h>
+#include <cm4.h>
 
 /**
  * Stack frame layout on exception entry (Cortex-M):
@@ -61,8 +62,9 @@ void SVC_Handler_C(uint32_t *stack_frame)
 	 * PC (stack_frame[6]) points to instruction after SVC
 	 * In Thumb mode, instructions are 2 bytes, so subtract 2
 	 * SVC instruction format: SVC #imm, where imm is in bits [7:0]
+	 * Note: PC on Cortex-M always has bit 0 set (Thumb mode), clear it for address calculation
 	 */
-		svc_instr = (uint16_t *)(stack_frame[6] - 2);
+	svc_instr = (uint16_t *)((stack_frame[6] & ~1U) - 2);
 	svc_id = (uint8_t)(*svc_instr & 0xFF);
 	
 	/* Extract arguments from stack frame */
@@ -81,8 +83,11 @@ void SVC_Handler_C(uint32_t *stack_frame)
 			break;
 			
 		case SYS_getpid:
-			stack_frame[0] = (uint32_t)k_getpid();
-			break;
+			{
+				uint32_t pid = (uint32_t)k_getpid();
+				stack_frame[0] = pid;  /* Write return value to saved R0 */
+				break;
+			}
 			
 		case SYS_read:
 			stack_frame[0] = (uint32_t)k_read((int)arg0, (void *)arg1, (size_t)arg2);
@@ -111,6 +116,10 @@ void SVC_Handler_C(uint32_t *stack_frame)
 			stack_frame[0] = (uint32_t)(-ENOSYS);
 			break;
 	}
+	
+	/* Memory barrier to ensure stack_frame[0] write is visible before exception return */
+	__DSB();
+	__ISB();
 	
 	/* Return to user mode - hardware will automatically restore context */
 	/* The EXC_RETURN value in LR ensures return to Thread mode with PSP */
