@@ -41,6 +41,7 @@
 #include <system_config.h>
 #include <mcu_info.h>
 #include <sys_rtc.h>
+#include <stm32f446xx.h>
 #ifndef DEBUG
 #define DEBUG 1
 #endif
@@ -61,6 +62,8 @@ void __sys_init(void)
 	__ISB();
 	NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 	__SysTick_init(1000);	//enable systick for 1ms
+	/* Set SysTick priority to lowest (0xFF) for context switching */
+	__NVIC_SetPriority(SysTick_IRQn, 0xFFU);
 	//SYS_RTC_init();
 	SerialLin2_init(__CONSOLE,0);
 	SerialLin6_init(&huart6,0);

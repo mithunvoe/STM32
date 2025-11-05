@@ -29,5 +29,60 @@
  */
  
 #include <unistd.h>
-/* Write your highlevel I/O details */
+#include <syscall_def.h>
+#include <stdint.h>
+#include <stddef.h>
+
+/* SVC_CALL macro: Executes SVC instruction with syscall number and arguments */
+#define SVC_CALL(num, a0, a1, a2, a3)                                          \
+  ({                                                                           \
+    register uint32_t r0 __asm("r0") = (uint32_t)(a0);   /* Arg 1 */         \
+    register uint32_t r1 __asm("r1") = (uint32_t)(a1);   /* Arg 2 */         \
+    register uint32_t r2 __asm("r2") = (uint32_t)(a2);   /* Arg 3 */         \
+    register uint32_t r3 __asm("r3") = (uint32_t)(a3);   /* Arg 4 */         \
+    __asm volatile("svc %[imm]"                           /* Execute SVC */   \
+                   : "+r"(r0)                             /* Output: r0 */    \
+                   : [imm] "I"(num), "r"(r1), "r"(r2), "r"(r3)  /* Input */  \
+                   : "memory");                           /* Clobber */       \
+    r0;                                                   /* Return r0 */     \
+  })
+
+/* Read from file descriptor */
+ssize_t read(int fd, void *buf, size_t count) {
+  return (ssize_t)SVC_CALL(SYS_read, fd, buf, count, 0U);
+}
+
+/* Write to file descriptor */
+ssize_t write(int fd, const void *buf, size_t count) {
+  return (ssize_t)SVC_CALL(SYS_write, fd, buf, count, 0U);
+}
+
+/* Exit process */
+void _exit(int status) {
+  (void)SVC_CALL(SYS__exit, (uint32_t)status, 0U, 0U, 0U);
+  /* Should not return */
+  while(1);
+}
+
+/* Get process ID */
+pid_t getpid(void) {
+  return (pid_t)SVC_CALL(SYS_getpid, 0U, 0U, 0U, 0U);
+}
+
+/* Get system time */
+uint32_t getSysTickTime(void) {
+  return SVC_CALL(SYS___time, 0U, 0U, 0U, 0U);
+}
+
+/* Reboot system */
+void reboot(void) {
+  (void)SVC_CALL(SYS_reboot, 0U, 0U, 0U, 0U);
+  /* Should not return */
+  while(1);
+}
+
+/* Yield CPU (voluntary context switch) */
+void yield(void) {
+  (void)SVC_CALL(SYS_yield, 0U, 0U, 0U, 0U);
+}
 

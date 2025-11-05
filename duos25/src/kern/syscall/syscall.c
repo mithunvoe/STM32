@@ -32,30 +32,109 @@
 #include <syscall_def.h>
 #include <errno.h>
 #include <errmsg.h>
-void syscall(uint16_t callno)
+#include <kunistd.h>
+#include <UsartRingBuffer.h>
+#include <system_config.h>
+#include <cm4.h>
+
+/* Global task ID variable */
+volatile uint16_t g_current_task_id = 0;
+
+/* The SVC_Handler_C calls this function to evaluate and execute the actual function */
+uint32_t syscall_dispatch(uint16_t callno, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 {
-/* The SVC_Handler calls this function to evaluate and execute the actual function */
-/* Take care of return value or code */
 	switch(callno)
 	{
-		/* Write your code to call actual function (kunistd.h/c or times.h/c and handle the return value(s) */
-		case SYS_read: 
-			break;
-		case SYS_write:
-			break;
-		case SYS_reboot:
-			break;	
-		case SYS__exit:
-			break;
-		case SYS_getpid:
-			break;
-		case SYS___time:
-			break;
-		case SYS_yield:
-			break;				
-		/* return error code see error.h and errmsg.h ENOSYS sys_errlist[ENOSYS]*/	
-		default: ;
+		case SYS_read: {
+			/* SYS_read: Read from UART (stdin) */
+			uint32_t fd = a0;
+			uint8_t *buf = (uint8_t *)a1;
+			uint32_t len = a2;
+			
+			/* Validate parameters */
+			if (fd != STDIN_FILENO || buf == 0 || len == 0U) {
+				return 0U;
+			}
+			
+			/* Limit buffer size */
+			if (len > 256U) {
+				len = 256U;
+			}
+			
+			/* Read from UART */
+			uint32_t count = 0U;
+			while (count < len) {
+				while (IsDataAvailable(__CONSOLE) == 0) {
+					/* Busy wait for data */
+				}
+				int c = Uart_read(__CONSOLE);
+				if (c < 0) {
+					break;
+				}
+				buf[count++] = (uint8_t)c;
+				if ((uint8_t)c == '\n') {
+					break;  /* Stop on newline */
+				}
+			}
+			
+			/* Null terminate if we didn't fill the buffer */
+			if (count < len) {
+				buf[count] = '\0';
+			}
+			
+			return count;  /* Return bytes read */
+		}
+		
+		case SYS_write: {
+			/* SYS_write: Write to UART (stdout) */
+			uint32_t fd = a0;
+			const uint8_t *buf = (const uint8_t *)a1;
+			uint32_t len = a2;
+			
+			/* Validate parameters */
+			if (fd != STDOUT_FILENO || buf == 0 || len == 0U) {
+				return 0U;
+			}
+			
+			/* Write to UART */
+			for (uint32_t i = 0; i < len; i++) {
+				Uart_write(buf[i], __CONSOLE);
+			}
+			
+			return len;  /* Return bytes written */
+		}
+		
+		case SYS_reboot: {
+			/* SYS_reboot: System reset */
+			__NVIC_SystemReset();
+			return 0U;
+		}
+		
+		case SYS__exit: {
+			/* SYS__exit: Terminate process (trigger PendSV) */
+			SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
+			return 0U;
+		}
+		
+		case SYS_getpid: {
+			/* SYS_getpid: Get current task ID */
+			return (uint32_t)g_current_task_id;
+		}
+		
+		case SYS___time: {
+			/* SYS___time: Get system time in milliseconds */
+			return __getTime();
+		}
+		
+		case SYS_yield: {
+			/* SYS_yield: Voluntary context switch (trigger PendSV) */
+			SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
+			return 0U;
+		}
+		
+		default:
+			/* Return error code for unimplemented syscalls */
+			return (uint32_t)ENOSYS;
 	}
-/* Handle SVC return here */
 }
 

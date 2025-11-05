@@ -31,5 +31,23 @@
 #ifndef __UNISTD_H
 #define __UNISTD_H
 /* Basic input and output function */
+#include <stdint.h>
+#include <stddef.h>
+
+/* Type definitions */
+typedef int pid_t;
+typedef int ssize_t;
+
+/* Function declarations */
+ssize_t read(int fd, void *buf, size_t count);
+ssize_t write(int fd, const void *buf, size_t count);
+void _exit(int status);
+pid_t getpid(void);
+uint32_t getSysTickTime(void);
+void reboot(void);
+void yield(void);
+
+/* Alias for compatibility */
+#define exit(status) _exit(status)
 
 #endif

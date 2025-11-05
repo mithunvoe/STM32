@@ -31,6 +31,9 @@
 #ifndef _SYSCALL_H
 #define _SYSCALL_H
 #include <stdint.h>
-void syscall(uint16_t);
+/* Syscall dispatcher function */
+uint32_t syscall_dispatch(uint16_t callno, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3);
+/* Global task ID variable */
+extern volatile uint16_t g_current_task_id;
 #endif
 

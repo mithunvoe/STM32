@@ -36,8 +36,13 @@ extern "C" {
 #undef NULL
 #define NULL 0
 
-
-#define size_t uint64_t
+/* Define size_t as uint64_t - use a typedef after ensuring stdint.h is processed */
+/* Prevent multiple definitions */
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
+/* Use unsigned long long to match uint64_t without typedef conflicts */
+typedef unsigned long long size_t;
+#endif
 
 #define SYS_GPIO_t    0x001
 #define SYS_USART_t   0x002

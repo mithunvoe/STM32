@@ -38,6 +38,9 @@
 #include <kstring.h>
 #include <sys_gpio.h>
 #include <system_config.h>
+#include <syscall.h>
+#include <unistd.h>
+#include <kunistd.h>
 
 #include <timer.h>
 #ifndef DEBUG
@@ -46,31 +49,49 @@
 void kmain(void)
 {
     __sys_init();
-    /* Configure LED (e.g., Nucleo-F446RE LD2 on PA5) */
-    {
-        /* Enable GPIOA clock (AHB1ENR bit 0) */
-        RCC->AHB1ENR |= (1U << 0);
-        (void)RCC->AHB1ENR; /* dummy read to ensure clock is enabled */
-
-        GPIO_InitTypeDef gi;
-        gi.Pin = GPIO_PIN_5;
-        gi.Mode = GPIO_MODE_OUTPUT_PP;
-        gi.Pull = GPIO_NOPULL;
-        gi.Speed = GPIO_SPEED_FREQ_LOW;
-        gi.Alternate = 0U;
-        GPIO_Init(GPIOA, &gi);
-        /* Start LED OFF */
-        GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-    }
-    int i = 0;
-    while (1)
-    {
-        /* Toggle LED every BLINK_PERIOD_MS */
-        static uint8_t on = 0;
-        on ^= 1U;
-        kprintf("%d\n", i++);
+    
+    /* Add delay to allow UART to initialize and flush */
+    ms_delay(100);
+    
+    /* Set task ID for testing */
+    g_current_task_id = 1000;
+    
+    /* Test 1: kprintf (kernel mode, direct UART) */
+    kprintf("Task ID set to: %d\r\n", g_current_task_id);
+    ms_delay(10);
+    
+    /* Test 2: write syscall (user mode, via SVC) */
+    char msg[] = "Hello from userland via write()\r\n";
+    write(STDOUT_FILENO, msg, sizeof(msg) - 1U);
+    ms_delay(10);
+    
+    /* Test 3: getSysTickTime syscall */
+    uint32_t t = getSysTickTime();
+    kprintf("getSysTickTime() returned: %d ms\r\n", t);
+    ms_delay(10);
+    
+    /* Test 4: getpid syscall */
+    int pid = getpid();
+    kprintf("getpid() returned: %d\r\n", pid);
+    ms_delay(10);
+    
+    /* Test 5: Combined output */
+    kprintf("Current time: %d ms, pid: %d\r\n", t, pid);
+    ms_delay(10);
+    
+    /* Test 6: yield syscall (triggers PendSV - but PendSV is stub, so just return) */
+    kprintf("Calling yield()...\r\n");
+    ms_delay(10);
+    yield();  /* Triggers PendSV but should return */
+    ms_delay(10);
+    kprintf("After yield()\r\n");
+    
+    /* Don't call exit(0) as it triggers PendSV which causes infinite loop */
+    /* Instead, just loop forever */
+    kprintf("System ready. Entering main loop...\r\n");
+    
+    while (1) {
+        /* Main loop - don't call exit() */
         ms_delay(1000);
-        // GPIO_WritePin(GPIOA, GPIO_PIN_5, on ? GPIO_PIN_SET : GPIO_PIN_RESET);
-        // ms_delay(10);
     }
 }

@@ -178,7 +178,8 @@ duos: $(OBJECT)/kmath.o \
 	$(OBJECT)/debug.o \
 	$(OBJECT)/timer.o \
 	$(OBJECT)/sys_err.o \
-	$(OBJECT)/sys_rtc.o  
+	$(OBJECT)/sys_rtc.o \
+	$(OBJECT)/syscall.o  
 	
 
 	$(CC) $(LDFLAGS) $^ -o $(TARGET)/$@
@@ -205,7 +206,8 @@ final.elf: $(OBJECT)/kmath.o \
 	$(OBJECT)/debug.o \
 	$(OBJECT)/timer.o \
 	$(OBJECT)/sys_err.o \
-	$(OBJECT)/sys_rtc.o 
+	$(OBJECT)/sys_rtc.o \
+	$(OBJECT)/syscall.o 
 	
 	
 	$(CC) $(LDFLAGS) $^ -o build/$@

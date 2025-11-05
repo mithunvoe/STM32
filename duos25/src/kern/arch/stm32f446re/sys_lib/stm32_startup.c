@@ -29,6 +29,7 @@
  */
  
 #include <stm32_startup.h>
+#include <syscall.h>
 const uint32_t STACK_START = (uint32_t)SRAM_END;
 uint32_t NVIC_VECTOR[] __attribute__((section (".isr_vector")))={
 	STACK_START,
@@ -186,11 +187,39 @@ void BusFault_Handler(void)
 	while(1);
 }
 
-void SVCall_Handler(void){
-/* Write code for SVC handler */
-/* the handler function evntually call syscall function with a call number */
+/* Forward declaration */
+void SVC_Handler_C(uint32_t *stack);
 
+/* Naked assembly handler to determine stack pointer */
+__attribute__((naked)) void SVCall_Handler(void) {
+  __asm volatile(
+    "tst lr, #4\n"        /* Test bit 2 of LR (EXC_RETURN) */
+    "ite eq\n"            /* If-Then-Else */
+    "mrseq r0, msp\n"     /* If EQ: r0 = MSP (Main Stack Pointer) */
+    "mrsne r0, psp\n"     /* If NE: r0 = PSP (Process Stack Pointer) */
+    "b SVC_Handler_C\n"   /* Branch to C handler */
+  );
+}
 
+/* C handler to extract SVC number and call dispatcher */
+void SVC_Handler_C(uint32_t *stack) {
+  /* Step 1: Get return address (PC) from stack frame */
+  uint32_t pc = stack[6];
+  
+  /* Step 2: Extract SVC number from instruction (PC-2 points to svc instruction) */
+  uint8_t svc_no = ((const uint8_t *)(pc - 2U))[0];
+  
+  /* Step 3: Extract arguments from stack */
+  uint32_t a0 = stack[0];  /* r0 - Argument 1 / Return value */
+  uint32_t a1 = stack[1];  /* r1 - Argument 2 */
+  uint32_t a2 = stack[2];  /* r2 - Argument 3 */
+  uint32_t a3 = stack[3];  /* r3 - Argument 4 */
+  
+  /* Step 4: Call kernel dispatcher */
+  uint32_t rc = syscall_dispatch((uint16_t)svc_no, a0, a1, a2, a3);
+  
+  /* Step 5: Store return value back to r0 in stack */
+  stack[0] = rc;
 }
 
 
