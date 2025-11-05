@@ -17,10 +17,13 @@ void show_system_info(void)
         break;
     case 0x01UL:
         kprintf("LQFP100");
+        break;
     case 0x02UL:
         kprintf("WLCSP81");
+        break;
     case 0x03UL:
         kprintf("LQFP144");
+        break;
     default: kprintf("UNKNOWN");
         break;
     }
@@ -49,9 +52,11 @@ void store_product_id(void)
     ptr=(uint8_t*)&MCUINFO->UIDW;
     for(uint32_t i=0;i<4;i++)
     {
-        product_id[j]=(ptr[i] & 0xF0)+0x30;
+        uint8_t nibble_high = (ptr[i] >> 4) & 0x0F;
+        uint8_t nibble_low = ptr[i] & 0x0F;
+        product_id[j] = (nibble_high < 10) ? (nibble_high + 0x30) : (nibble_high + 0x37);
         j++;
-        product_id[j]=(ptr[i]& 0x0F)+0x30;
+        product_id[j] = (nibble_low < 10) ? (nibble_low + 0x30) : (nibble_low + 0x37);
         j++;
     }
     product_id[j]=0;

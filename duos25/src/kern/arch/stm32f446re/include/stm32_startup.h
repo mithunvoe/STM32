@@ -61,7 +61,7 @@ void BusFault_Handler(void)__attribute__((weak));
 void UsageFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void SVCall_Handler(void) __attribute__((weak));
 void DebugMonitor_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void PendSV_Handler(void) __attribute__((weak, alias("Default_Handler")));
+void PendSV_Handler(void) __attribute__((weak));
 void SysTick_Handler(void) __attribute__((weak));
 void WWDG_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void PVD_Handler(void) __attribute__((weak, alias("Default_Handler")));

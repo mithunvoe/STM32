@@ -33,6 +33,7 @@
 #include <kmain.h>
 #include <stdint.h>
 #include <sys_usart.h>
+
 #include <kstdio.h>
 #include <sys_rtc.h>
 #include <kstring.h>
@@ -53,7 +54,7 @@ void kmain(void)
     /* Add delay to allow UART to initialize and flush */
     ms_delay(100);
     
-    /* Set task ID for testing */
+    /* Set task ID for testing (use global variable from syscall.c) */
     g_current_task_id = 1000;
     
     /* Test 1: kprintf (kernel mode, direct UART) */
@@ -93,5 +94,8 @@ void kmain(void)
     while (1) {
         /* Main loop - don't call exit() */
         ms_delay(1000);
+        // print time
+        kprintf("Time: %d ms\r\n", getSysTickTime());
+        
     }
 }

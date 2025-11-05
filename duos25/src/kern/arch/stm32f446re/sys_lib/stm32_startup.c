@@ -222,4 +222,18 @@ void SVC_Handler_C(uint32_t *stack) {
   stack[0] = rc;
 }
 
+/* PendSV handler stub - just returns to allow yield() and exit() to work */
+/* This is a minimal implementation that will be replaced with full context switching later */
+void PendSV_Handler(void) {
+  /* PendSV stub - currently just returns immediately */
+  /* In a full implementation, this would:
+   *   1. Save current task context
+   *   2. Select next task (scheduler)
+   *   3. Restore next task context
+   *   4. Return
+   */
+  /* For now, just return to prevent infinite loop in Default_Handler */
+  return;
+}
+
 
