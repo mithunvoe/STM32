@@ -116,17 +116,63 @@ void putstr(const uint8_t *str,size_t size)
 	}
 }
 
+/* Helper function to read a string from UART until whitespace or newline */
+static void read_string_from_uart(uint8_t *buff, uint32_t max_len)
+{
+	uint32_t idx = 0U;
+	int c;
+	
+	/* Wait for data to be available */
+	while (IsDataAvailable(__CONSOLE) == 0) {
+		/* Busy wait */
+	}
+	
+	/* Read characters until whitespace, newline, or buffer full */
+	while (idx < (max_len - 1U)) {
+		/* Wait for data */
+		while (IsDataAvailable(__CONSOLE) == 0) {
+			/* Busy wait */
+		}
+		
+		c = Uart_read(__CONSOLE);
+		if (c < 0) {
+			break;
+		}
+		
+		/* Stop on whitespace or newline */
+		if ((uint8_t)c == '\n' || (uint8_t)c == '\r' || (uint8_t)c == ' ' || (uint8_t)c == '\t') {
+			/* Echo the newline/whitespace for user feedback */
+			if ((uint8_t)c == '\n' || (uint8_t)c == '\r') {
+				Uart_write('\r', __CONSOLE);
+				Uart_write('\n', __CONSOLE);
+			}
+			break;
+		}
+		
+		/* Echo character back for user feedback */
+		Uart_write((uint8_t)c, __CONSOLE);
+		
+		/* Store character */
+		buff[idx++] = (uint8_t)c;
+	}
+	
+	/* Null terminate */
+	buff[idx] = '\0';
+}
+
 // Simplified version of scanf
 void kscanf(char *format,...)
 {
-//write your code here
 	va_list list;
 	char *ptr;
 	uint8_t buff[50];
 	uint8_t *str;
 	int len;
-	ptr=format;
-	va_start(list,format);
+	int c;
+	
+	ptr = format;
+	va_start(list, format);
+	
 	while (*ptr)
 	{
 		if(*ptr == '%') //looking for format of an input
@@ -134,33 +180,49 @@ void kscanf(char *format,...)
 			ptr++;
 			switch (*ptr)
 			{
-			case 'c': //charater
-				*(uint8_t*)va_arg(list,uint8_t*)=Uart_read(__CONSOLE);
+			case 'c': //character
+				/* Wait for data */
+				while (IsDataAvailable(__CONSOLE) == 0) {
+					/* Busy wait */
+				}
+				c = Uart_read(__CONSOLE);
+				if (c >= 0) {
+					/* Echo character back */
+					Uart_write((uint8_t)c, __CONSOLE);
+					*(uint8_t*)va_arg(list, uint8_t*) = (uint8_t)c;
+				}
 				break;
-			case 'd': //integer number 
-				//uart_USART_READ_STR(USART2,buff,50); 
-				*(uint32_t*)va_arg(list,uint32_t*)=__str_to_num(buff,10);	
+				
+			case 'd': //integer number (decimal)
+				read_string_from_uart(buff, sizeof(buff));
+				*(uint32_t*)va_arg(list, uint32_t*) = __str_to_num(buff, 10);
 				break;
+				
 			case 's': //string without spaces
-				//_USART_READ_STR(USART2,buff,50); 
-				str = va_arg(list,uint8_t*);
+				str = va_arg(list, uint8_t*);
+				read_string_from_uart(buff, sizeof(buff));
 				len = __strlen(buff);
-				for(int u = 0; u<=len; u++)	// copy from buff to user defined char pointer (i.e string)
-					str[u] = buff[u];	
+				/* Copy string including null terminator */
+				for(int u = 0; u <= len; u++) {
+					str[u] = buff[u];
+				}
 				break;
+				
 			case 'x': //hexadecimal number
-				//_USART_READ_STR(USART2,buff,50); 
-				*(int*)va_arg(list,uint32_t*)=__str_to_num(buff,16);	
-				break;	
+				read_string_from_uart(buff, sizeof(buff));
+				*(uint32_t*)va_arg(list, uint32_t*) = __str_to_num(buff, 16);
+				break;
+				
 			case 'o': //octal number
-				//_USART_READ_STR(USART2,buff,50); 
-				*(uint32_t*)va_arg(list,uint32_t*)=__str_to_num(buff,8);	
-				break;	
+				read_string_from_uart(buff, sizeof(buff));
+				*(uint32_t*)va_arg(list, uint32_t*) = __str_to_num(buff, 8);
+				break;
+				
 			case 'f': //floating point number
-				//_USART_READ_STR(USART2,buff,50);
-				//*(uint32_t*)va_arg(list,double*) = __str_to_num(buff,10);
-				*(float*)va_arg(list,float*) = str2float(buff);	// Works for float but not for double !!!
-				break;	
+				read_string_from_uart(buff, sizeof(buff));
+				*(float*)va_arg(list, float*) = str2float(buff);
+				break;
+				
 			default: //rest not recognized
 				break;
 			}

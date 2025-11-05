@@ -61,19 +61,51 @@ uint32_t syscall_dispatch(uint16_t callno, uint32_t a0, uint32_t a1, uint32_t a2
 				len = 256U;
 			}
 			
-			/* Read from UART */
+			/* Read from UART - line-oriented input (waits for newline or timeout) */
 			uint32_t count = 0U;
+			uint32_t no_data_count = 0U;
+			const uint32_t TIMEOUT_ITERATIONS = 100000U;  /* ~100ms timeout at 180MHz */
+			
+			/* Wait for at least one character to be available */
+			while (IsDataAvailable(__CONSOLE) == 0) {
+				/* Busy wait for data */
+			}
+			
+			/* Read characters until newline, buffer full, or timeout */
 			while (count < len) {
-				while (IsDataAvailable(__CONSOLE) == 0) {
-					/* Busy wait for data */
+				/* Check if data is available */
+				if (IsDataAvailable(__CONSOLE) == 0) {
+					no_data_count++;
+					/* If we've read some data and no new data for a while, return */
+					if (count > 0U && no_data_count > TIMEOUT_ITERATIONS) {
+						/* Timeout - return what we have */
+						break;
+					}
+					/* If no data at all, keep waiting */
+					if (count == 0U) {
+						continue;
+					}
+					/* Small delay to avoid busy spinning */
+					__NOP();
+					__NOP();
+					__NOP();
+					__NOP();
+					continue;
 				}
+				
+				/* Reset timeout counter when data is available */
+				no_data_count = 0U;
+				
 				int c = Uart_read(__CONSOLE);
 				if (c < 0) {
 					break;
 				}
+				
 				buf[count++] = (uint8_t)c;
-				if ((uint8_t)c == '\n') {
-					break;  /* Stop on newline */
+				
+				/* Stop on newline or carriage return */
+				if ((uint8_t)c == '\n' || (uint8_t)c == '\r') {
+					break;
 				}
 			}
 			

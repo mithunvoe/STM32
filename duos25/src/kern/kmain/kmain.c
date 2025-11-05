@@ -53,6 +53,20 @@ void kmain(void)
     
     /* Add delay to allow UART to initialize and flush */
     ms_delay(100);
+    {
+        RCC->AHB1ENR |= (1U << 0);
+        (void)RCC->AHB1ENR; /* dummy read to ensure clock is enabled */
+
+        GPIO_InitTypeDef gi;
+        gi.Pin = GPIO_PIN_5;
+        gi.Mode = GPIO_MODE_OUTPUT_PP;
+        gi.Pull = GPIO_NOPULL;
+        gi.Speed = GPIO_SPEED_FREQ_LOW;
+        gi.Alternate = 0U;
+        GPIO_Init(GPIOA, &gi);
+        /* Start LED OFF */
+        GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+    }
     
     /* Set task ID for testing (use global variable from syscall.c) */
     g_current_task_id = 1000;
@@ -91,11 +105,9 @@ void kmain(void)
     /* Instead, just loop forever */
     kprintf("System ready. Entering main loop...\r\n");
     
+    
+    /* End of program */
     while (1) {
-        /* Main loop - don't call exit() */
         ms_delay(1000);
-        // print time
-        kprintf("Time: %d ms\r\n", getSysTickTime());
-        
     }
 }
