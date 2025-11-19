@@ -175,8 +175,21 @@ void USART1_IRQHandler(void)
 /**
   * @brief This function handles USART2 global interrupt.
   */
+volatile uint32_t usart2_isr_count = 0;  /* Debug counter */
+volatile uint32_t usart2_rxne_count = 0;  /* RX data available */
+volatile uint32_t usart2_txe_count = 0;   /* TX empty */
+volatile uint32_t usart2_error_count = 0; /* Errors */
+
 void USART2_Handler(void)
 {
+	usart2_isr_count++;  /* Increment on every interrupt */
+
+	/* Track which interrupt type */
+	uint32_t sr = huart2.Instance->SR;
+	if (sr & USART_SR_RXNE) usart2_rxne_count++;
+	if (sr & USART_SR_TXE) usart2_txe_count++;
+	if ((sr & USART_SR_NE) || (sr & USART_SR_ORE) || (sr & USART_SR_FE)) usart2_error_count++;
+
   	Uart_isr (&huart2);
 }
 

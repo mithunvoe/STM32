@@ -41,10 +41,12 @@ extern "C" {
 #endif
 #define __DSB()        asm volatile("dsb 0xf":::"memory")
 #define __ISB()        asm volatile("isb 0xf":::"memory")
-#define __DMB()        asm volatile("dmb 0xf":::"memory") 
+#define __DMB()        asm volatile("dmb 0xf":::"memory")
 #define __NOP()        asm volatile("nop":::"memory")
 #define __NVIC_PRIO_BITS          4U
 #define __WFI()         asm volatile("wfi")
+#define __enable_irq()  asm volatile("cpsie i":::"memory")
+#define __disable_irq() asm volatile("cpsid i":::"memory")
 /*
 * This file defines Cortex-M4 processor internal peripherals
 * NVIC, SCB, FPU and so on

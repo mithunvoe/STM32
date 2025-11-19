@@ -465,11 +465,30 @@ Uart_isr(UART_HandleTypeDef *huart)
 	uint32_t cr1its = READ_REG(huart->Instance->CR1);
 	uint32_t tmp;
 	unsigned char c;
-	if (((isrflags & USART_SR_NE) != RESET) || ((isrflags & USART_SR_ORE) != RESET) || ((isrflags & USART_SR_FE) != RESET))
+
+	/* Clear errors by reading SR and DR, but don't discard data on ORE */
+	if (((isrflags & USART_SR_NE) != RESET) || ((isrflags & USART_SR_FE) != RESET))
 	{
+		/* Noise or Framing error - clear by reading SR then DR */
 		tmp = huart->Instance->SR;
-		tmp |= (tmp | huart->Instance->DR);
-		return;
+		tmp = huart->Instance->DR;
+		(void)tmp; /* Suppress unused variable warning */
+		return; /* Don't store corrupted data */
+	}
+
+	/* Handle Overrun Error - clear it but still read data if available */
+	if ((isrflags & USART_SR_ORE) != RESET)
+	{
+		/* ORE is cleared by reading SR (already done) then reading DR */
+		/* We'll read DR below if RXNE is set, otherwise just clear */
+		if ((isrflags & USART_SR_RXNE) == RESET)
+		{
+			/* No data to read, just clear the error */
+			tmp = huart->Instance->DR;
+			(void)tmp;
+			return;
+		}
+		/* If RXNE is set, continue below to read and store the data */
 	}
 
 	/* if DR is not empty and the Rx Int is enabled */

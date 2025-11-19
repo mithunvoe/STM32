@@ -71,6 +71,9 @@ void __sys_init(void)
 	Ringbuf_init(&huart6);
 	ConfigTimer2ForSystem();
 	__ISB();
+
+	/* Enable global interrupts */
+	__enable_irq();
 	#ifdef DEBUG
 	kprintf("\n************************************\r\n");
 	kprintf("Booting Machine Intelligence System 1.0 .....\r\n");

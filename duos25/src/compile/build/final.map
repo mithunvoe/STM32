@@ -32,7 +32,7 @@ LOAD object/sys_err.o
 LOAD object/sys_rtc.o
 LOAD object/syscall.o
 
-.text           0x08000000     0x580c
+.text           0x08000000     0x5804
                 0x08000000                        _stext = .
  *(.isr_vector)
  .isr_vector    0x08000000      0x1c4 object/stm32_startup.o
@@ -278,41 +278,41 @@ LOAD object/syscall.o
  .rodata        0x08004d54       0x64 object/mcu_info.o
  .rodata        0x08004db8        0x6 object/kstring.o
  *fill*         0x08004dbe        0x2 
- .rodata        0x08004dc0      0x206 object/kmain.o
- *fill*         0x08004fc6        0x2 
- .rodata        0x08004fc8        0x4 object/stm32_startup.o
-                0x08004fc8                STACK_START
- .rodata        0x08004fcc       0x18 object/sys_clock.o
-                0x08004fcc                AHBPrescTable
-                0x08004fdc                APBPrescTable
- .rodata        0x08004fe4      0x12f object/sys_init.o
- *fill*         0x08005113        0x1 
- .rodata        0x08005114      0x6f8 object/syscall.o
-                0x08005704                sys_errlist
-                0x08005808                sys_nerr
-                0x0800580c                        . = ALIGN (0x4)
-                0x0800580c                        _etext = .
-                0x0800580c                        _la_data = LOADADDR (.data)
+ .rodata        0x08004dc0      0x1fe object/kmain.o
+ *fill*         0x08004fbe        0x2 
+ .rodata        0x08004fc0        0x4 object/stm32_startup.o
+                0x08004fc0                STACK_START
+ .rodata        0x08004fc4       0x18 object/sys_clock.o
+                0x08004fc4                AHBPrescTable
+                0x08004fd4                APBPrescTable
+ .rodata        0x08004fdc      0x12f object/sys_init.o
+ *fill*         0x0800510b        0x1 
+ .rodata        0x0800510c      0x6f8 object/syscall.o
+                0x080056fc                sys_errlist
+                0x08005800                sys_nerr
+                0x08005804                        . = ALIGN (0x4)
+                0x08005804                        _etext = .
+                0x08005804                        _la_data = LOADADDR (.data)
 
-.glue_7         0x0800580c        0x0
- .glue_7        0x0800580c        0x0 linker stubs
+.glue_7         0x08005804        0x0
+ .glue_7        0x08005804        0x0 linker stubs
 
-.glue_7t        0x0800580c        0x0
- .glue_7t       0x0800580c        0x0 linker stubs
+.glue_7t        0x08005804        0x0
+ .glue_7t       0x08005804        0x0 linker stubs
 
-.vfp11_veneer   0x0800580c        0x0
- .vfp11_veneer  0x0800580c        0x0 linker stubs
+.vfp11_veneer   0x08005804        0x0
+ .vfp11_veneer  0x08005804        0x0 linker stubs
 
-.v4_bx          0x0800580c        0x0
- .v4_bx         0x0800580c        0x0 linker stubs
+.v4_bx          0x08005804        0x0
+ .v4_bx         0x08005804        0x0 linker stubs
 
-.iplt           0x0800580c        0x0
- .iplt          0x0800580c        0x0 object/kfloat.o
+.iplt           0x08005804        0x0
+ .iplt          0x08005804        0x0 object/kfloat.o
 
-.rel.dyn        0x0800580c        0x0
- .rel.iplt      0x0800580c        0x0 object/kfloat.o
+.rel.dyn        0x08005804        0x0
+ .rel.iplt      0x08005804        0x0 object/kfloat.o
 
-.data           0x20000000       0x6c load address 0x0800580c
+.data           0x20000000       0x6c load address 0x08005804
                 0x20000000                        _sdata = .
  *(.data)
  .data          0x20000000        0x0 object/kmath.o
@@ -341,10 +341,10 @@ LOAD object/syscall.o
                 0x2000006c                        . = ALIGN (0x4)
                 0x2000006c                        _edata = .
 
-.igot.plt       0x2000006c        0x0 load address 0x08005878
+.igot.plt       0x2000006c        0x0 load address 0x08005870
  .igot.plt      0x2000006c        0x0 object/kfloat.o
 
-.bss            0x2000006c      0x90c load address 0x08005878
+.bss            0x2000006c      0x90c load address 0x08005870
                 0x2000006c                        _sbss = .
  *(.bss)
  .bss           0x2000006c        0x0 object/kmath.o

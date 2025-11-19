@@ -42,6 +42,7 @@
 #include <syscall.h>
 #include <unistd.h>
 #include <kunistd.h>
+#include <UsartRingBuffer.h>
 
 #include <timer.h>
 #ifndef DEBUG
@@ -101,11 +102,59 @@ void kmain(void)
     ms_delay(10);
     kprintf("After yield()\r\n");
     
+    /* Test 7: Quick RX interrupt test */
+    extern volatile uint32_t usart2_isr_count;
+    extern volatile uint32_t usart2_rxne_count;
+    extern volatile uint32_t usart2_txe_count;
+    extern volatile uint32_t usart2_error_count;
+
+    kprintf("\r\n=== Quick RX Test ===\r\n");
+    kprintf("Type something: ");
+    ms_delay(50);
+
+    /* Wait max 3 seconds for one character */
+    uint32_t wait_start = __getTime();
+    while (usart2_rxne_count == 0 && (__getTime() - wait_start) < 3000) {
+        ms_delay(10);
+    }
+
+    ms_delay(50);
+    kprintf("\r\nRXNE interrupts: %d\r\n", usart2_rxne_count);
+    if (usart2_rxne_count > 0) {
+        kprintf("SUCCESS - RX interrupts working!\r\n");
+    } else {
+        kprintf("FAILED - No RX interrupts received\r\n");
+        kprintf("Check: Is PA3 (USART2_RX) connected?\r\n");
+    }
+    ms_delay(50);
+
+    /* Test 8: read syscall with actual input */
+    char input_buf[64];
+    kprintf("\r\nType and press Enter:\r\n");
+    ms_delay(100);
+
+    /* Call read() - it will wait for input or timeout internally */
+    ssize_t bytes_read = read(STDIN_FILENO, input_buf, sizeof(input_buf));
+
+    ms_delay(50);
+    kprintf("read() returned: %d bytes\r\n", bytes_read);
+    ms_delay(10);
+
+    if (bytes_read > 0) {
+        kprintf("You typed: ");
+        write(STDOUT_FILENO, input_buf, bytes_read);
+        kprintf("\r\n");
+    }
+    ms_delay(10);
+
+    kprintf("RX interrupts: %d\r\n", usart2_rxne_count);
+    ms_delay(10);
+
     /* Don't call exit(0) as it triggers PendSV which causes infinite loop */
     /* Instead, just loop forever */
     kprintf("System ready. Entering main loop...\r\n");
-    
-    
+
+
     /* End of program */
     while (1) {
         ms_delay(1000);

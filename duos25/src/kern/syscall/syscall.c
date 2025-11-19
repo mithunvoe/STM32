@@ -61,14 +61,23 @@ uint32_t syscall_dispatch(uint16_t callno, uint32_t a0, uint32_t a1, uint32_t a2
 				len = 256U;
 			}
 			
-			/* Read from UART - line-oriented input (waits for newline or timeout) */
+			/* Read from UART - line-oriented input (waits for newline) */
 			uint32_t count = 0U;
 			uint32_t no_data_count = 0U;
-			const uint32_t TIMEOUT_ITERATIONS = 100000U;  /* ~100ms timeout at 180MHz */
-			
-			/* Wait for at least one character to be available */
+			const uint32_t TIMEOUT_ITERATIONS = 18000000U;  /* ~10 seconds timeout at 180MHz */
+
+			/* Wait for at least one character to be available with timeout */
+			uint32_t initial_wait_count = 0U;
 			while (IsDataAvailable(__CONSOLE) == 0) {
-				/* Busy wait for data */
+				initial_wait_count++;
+				if (initial_wait_count > TIMEOUT_ITERATIONS) {
+					/* Timeout - no data available after waiting, return 0 */
+					return 0U;
+				}
+				/* Small delay to avoid busy spinning */
+				for (volatile int i = 0; i < 100; i++) {
+					__NOP();
+				}
 			}
 			
 			/* Read characters until newline, buffer full, or timeout */
