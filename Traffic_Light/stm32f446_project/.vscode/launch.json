@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // "gdbPath": "gdb",
+            "objdumpPath": "arm-none-eabi-objdump",
+            "nmPath": "arm-none-eabi-nm",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/target/thumbv7em-none-eabihf/debug/${input:executablePath}",
+            "name": "Debug (OpenOCD)",
+            "device": "STM32F446",
+            "configFiles": [
+                "interface/stlink-v2-1.cfg",
+                "target/stm32f4x.cfg"
+            ],
+            "preLaunchTask": "build",
+            "runToEntryPoint": "main",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            "svdFile": "${workspaceRoot}/stm32f446.svd"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "executablePath",
+            "type": "promptString",
+            "description": "Enter the path to the executable"
+        }
+    ]
+}

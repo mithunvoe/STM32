@@ -10,6 +10,7 @@ panic-halt = "0.2.0"
 volatile-register = "0.2.1"
 stm32f4 = { version = "0.15.1", features = ["stm32f446"] }
 
+
 [profile.release]
 opt-level = 'z'     # Optimize for size
 lto = true          # Link-time optimization
